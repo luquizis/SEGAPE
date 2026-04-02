@@ -3,1743 +3,692 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MEC Tracker — Publicações Educacionais</title>
+<title>MEC Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-/* ─── Reset & Base ─────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --font-main: 'Sora', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-
-  --c-bg:       #F5F3EE;
-  --c-surface:  #FFFFFF;
-  --c-border:   #E2DEDA;
-  --c-border2:  #C8C3BC;
-  --c-text:     #1A1714;
-  --c-text2:    #6B6560;
-  --c-text3:    #9E9890;
-
-  --c-design:   #4A3F9F;
-  --c-design-bg:#EEEDFB;
-  --c-front:    #0D6B4F;
-  --c-front-bg: #E1F5EE;
-  --c-back:     #7A4A0A;
-  --c-back-bg:  #FDF0DC;
-  --c-text-c:   #14548A;
-  --c-text-cbg: #E4F1FA;
-  --c-sup:      #4A4845;
-  --c-sup-bg:   #F0EDE8;
-  --c-aprov:    #8A2252;
-  --c-aprov-bg: #FAE8F2;
-  --c-dados:    #8A2A1A;
-  --c-dados-bg: #FAECE7;
-
-  --c-wait:     #B0AAA3;
-  --c-doing:    #2B7FDD;
-  --c-block:    #D83A3A;
-  --c-done:     #1D9E75;
-  --c-pending:  #C07A10;
-
-  --c-atm:   #1D9E75;
-  --c-ats:   #2B7FDD;
-  --c-atso:  #C07A10;
-  --c-atmeq: #D85A30;
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-
-  --sidebar-w: 210px;
-  --topbar-h: 56px;
-  --transition: 0.15s ease;
-}
-
-body {
-  font-family: var(--font-main);
-  background: var(--c-bg);
-  color: var(--c-text);
-  font-size: 13px;
-  line-height: 1.5;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ─── Layout Shell ──────────────────────────────── */
-#shell {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* ─── Sidebar ───────────────────────────────────── */
-#sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
-  background: var(--c-surface);
-  border-right: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  z-index: 10;
-}
-
-.sb-header {
-  padding: 22px 18px 18px;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.sb-wordmark {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-
-.sb-wordmark strong {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  color: var(--c-text);
-}
-
-.sb-wordmark span {
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--c-text3);
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.sb-sub {
-  font-size: 10px;
-  color: var(--c-text3);
-  margin-top: 1px;
-}
-
-.sb-section {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--c-text3);
-  padding: 14px 18px 5px;
-}
-
-.sb-nav {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 8px;
-}
-
-.sb-nav::-webkit-scrollbar { width: 3px; }
-.sb-nav::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 2px; }
-
-.nav-proj {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition);
-  margin-bottom: 1px;
-  position: relative;
-}
-
-.nav-proj:hover { background: var(--c-bg); }
-
-.nav-proj.active {
-  background: var(--c-bg);
-}
-
-.nav-proj.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 18px;
-  border-radius: 0 3px 3px 0;
-  background: var(--proj-color, var(--c-text));
-}
-
-.proj-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.proj-name {
-  font-size: 12px;
-  font-weight: 500;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.proj-badge {
-  font-size: 9px;
-  font-family: var(--font-mono);
-  background: #FBDADA;
-  color: #8A2020;
-  padding: 1px 6px;
-  border-radius: 20px;
-  font-weight: 500;
-  min-width: 18px;
-  text-align: center;
-}
-
-.divider { height: 1px; background: var(--c-border); margin: 8px 18px; }
-
-.nav-member {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition);
-  margin-bottom: 1px;
-}
-
-.nav-member:hover { background: var(--c-bg); }
-.nav-member.active { background: var(--c-bg); }
-
-.nav-member .m-name {
-  font-size: 12px;
-  font-weight: 500;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nav-member .m-role {
-  font-size: 9px;
-  color: var(--c-text3);
-  white-space: nowrap;
-}
-
-.avatar {
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  flex-shrink: 0;
-  font-size: 9px;
-  letter-spacing: 0;
-}
-
-.sb-footer {
-  border-top: 1px solid var(--c-border);
-  padding: 12px 14px;
-}
-
-.me-card {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
-  background: var(--c-bg);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition);
-}
-
-.me-card:hover { background: var(--c-border); }
-
-.me-info { flex: 1; min-width: 0; }
-.me-info .me-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.me-info .me-role { font-size: 10px; color: var(--c-text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* ─── Main ──────────────────────────────────────── */
-#main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-
-/* ─── Topbar ────────────────────────────────────── */
-#topbar {
-  height: var(--topbar-h);
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  gap: 14px;
-  flex-shrink: 0;
-}
-
-.tb-project-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.tb-title {
-  font-size: 14px;
-  font-weight: 600;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: -0.2px;
-}
-
-.tb-ver {
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: var(--c-text3);
-  background: var(--c-bg);
-  padding: 3px 9px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--c-border);
-  white-space: nowrap;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font-main);
-  cursor: pointer;
-  border: 1px solid var(--c-border2);
-  background: var(--c-surface);
-  color: var(--c-text);
-  transition: all var(--transition);
-  white-space: nowrap;
-}
-
-.btn:hover { background: var(--c-bg); border-color: var(--c-text3); }
-
-.btn-primary {
-  background: var(--c-text);
-  color: var(--c-surface);
-  border-color: var(--c-text);
-}
-
-.btn-primary:hover { background: #2D2925; border-color: #2D2925; }
-
-/* ─── Content Area ──────────────────────────────── */
-#content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 22px 24px;
-}
-
-#content::-webkit-scrollbar { width: 5px; }
-#content::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 3px; }
-
-.layout-cols {
-  display: flex;
-  gap: 18px;
-  align-items: flex-start;
-}
-
-.col-main { flex: 1; min-width: 0; }
-.col-side { width: 244px; min-width: 244px; display: flex; flex-direction: column; gap: 14px; }
-
-/* ─── Cards ─────────────────────────────────────── */
-.card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
-  padding: 16px 18px;
-  margin-bottom: 14px;
-}
-
-.card-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--c-text3);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* ─── Doc Header ────────────────────────────────── */
-.doc-header {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.doc-thumb {
-  width: 58px;
-  height: 74px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--c-border);
-  overflow: hidden;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.doc-thumb-top {
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 500;
-}
-
-.doc-thumb-lines {
-  flex: 1;
-  padding: 5px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.dl { height: 2px; border-radius: 1px; background: var(--c-border); }
-
-.doc-info { flex: 1; min-width: 0; }
-
-.doc-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-
-.doc-desc {
-  font-size: 11px;
-  color: var(--c-text2);
-  line-height: 1.55;
-  margin-bottom: 10px;
-}
-
-.doc-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-
-.tag {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  padding: 2px 8px;
-  border-radius: 20px;
-  border: 1px solid var(--c-border);
-  color: var(--c-text2);
-  background: var(--c-bg);
-}
-
-.doc-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-  min-width: 90px;
-}
-
-.stat-item { text-align: right; }
-.stat-label { font-size: 9px; color: var(--c-text3); text-transform: uppercase; letter-spacing: 0.06em; display: block; }
-.stat-val { font-size: 20px; font-weight: 600; letter-spacing: -1px; font-family: var(--font-mono); line-height: 1; }
-
-/* ─── Pipeline ──────────────────────────────────── */
-.pipeline {
-  display: flex;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 14px;
-  background: var(--c-surface);
-}
-
-.pipe-stage {
-  flex: 1;
-  min-width: 0;
-  padding: 11px 13px;
-  cursor: pointer;
-  border-right: 1px solid var(--c-border);
-  position: relative;
-  transition: background var(--transition);
-}
-
-.pipe-stage:last-child { border-right: none; }
-.pipe-stage:hover { background: var(--c-bg); }
-
-.pipe-stage.active {
-  background: var(--c-bg);
-}
-
-.pipe-stage.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--c-text);
-}
-
-.ps-num {
-  font-size: 9px;
-  font-family: var(--font-mono);
-  color: var(--c-text3);
-  margin-bottom: 3px;
-}
-
-.ps-name {
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--c-text2);
-}
-
-.pipe-stage.active .ps-name { color: var(--c-text); }
-
-.ps-status {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-dot.wait    { background: var(--c-wait); }
-.status-dot.doing   { background: var(--c-doing); }
-.status-dot.block   { background: var(--c-block); }
-.status-dot.done    { background: var(--c-done); }
-.status-dot.pending { background: var(--c-pending); }
-
-.ps-status span {
-  font-size: 9px;
-  color: var(--c-text3);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.ps-avatars {
-  display: flex;
-  margin-top: 6px;
-}
-
-.ps-av {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1.5px solid var(--c-surface);
-  font-size: 7px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: -4px;
-}
-
-.ps-av:first-child { margin-left: 0; }
-
-/* ─── Stage Detail ──────────────────────────────── */
-.stage-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.stage-num-badge {
-  font-size: 9px;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--c-text3);
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-}
-
-.stage-name {
-  font-size: 14px;
-  font-weight: 600;
-  flex: 1;
-  letter-spacing: -0.2px;
-}
-
-.stage-count {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--c-text3);
-}
-
-.stage-owner-tag {
-  font-size: 10px;
-  color: var(--c-text2);
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-/* ─── Notice Bars ───────────────────────────────── */
-.notice {
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 9px 12px;
-  margin-bottom: 12px;
-  font-size: 11px;
-  line-height: 1.45;
-  border-left: 3px solid;
-}
-
-.notice.blocked  { background: #FDF2F2; border-color: var(--c-block); color: #7A2020; }
-.notice.ready    { background: #F0FAF5; border-color: var(--c-done); color: #0D5A3A; }
-.notice.approval { background: #FDF5E8; border-color: var(--c-pending); color: #6B4000; }
-
-.notice strong { font-weight: 600; }
-
-/* ─── Status Pills ──────────────────────────────── */
-.status-pills {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.sp {
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 11px;
-  border-radius: 20px;
-  cursor: pointer;
-  border: 1px solid var(--c-border);
-  color: var(--c-text3);
-  background: var(--c-surface);
-  transition: all var(--transition);
-  font-family: var(--font-main);
-}
-
-.sp:hover { border-color: var(--c-text3); }
-
-.sp.sel-wait    { background: #F4F2EE; color: var(--c-sup); border-color: #C8C3BC; }
-.sp.sel-doing   { background: #E4EFFA; color: #1A5FA0; border-color: #8ABFE8; }
-.sp.sel-block   { background: #FAE8E8; color: #882020; border-color: #ECA0A0; }
-.sp.sel-done    { background: #E0F5EE; color: #0D6040; border-color: #6DD4AC; }
-.sp.sel-pending { background: #FDF0DC; color: #7A4A0A; border-color: #E8B870; }
-
-/* ─── Legend ────────────────────────────────────── */
-.role-legend {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.rl {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: var(--c-text2);
-}
-
-.rl-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-/* ─── Section Label ─────────────────────────────── */
-.sect-lbl {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-text3);
-  margin: 10px 0 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.sect-lbl:first-of-type { margin-top: 0; }
-
-/* ─── Tasks ─────────────────────────────────────── */
-.task-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 9px 11px;
-  border-radius: var(--radius-md);
-  margin-bottom: 4px;
-  transition: opacity var(--transition);
-}
-
-.task-item.ti-design  { background: var(--c-design-bg); }
-.task-item.ti-front   { background: var(--c-front-bg); }
-.task-item.ti-back    { background: var(--c-back-bg); }
-.task-item.ti-dados   { background: var(--c-dados-bg); }
-.task-item.ti-text    { background: var(--c-text-cbg); }
-.task-item.ti-sup     { background: var(--c-sup-bg); }
-.task-item.ti-aprov   { background: var(--c-aprov-bg); }
-
-.chk {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  border: 1.5px solid;
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-top: 1px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition);
-}
-
-.ti-design .chk  { border-color: var(--c-design); }
-.ti-front .chk   { border-color: var(--c-front); }
-.ti-back .chk    { border-color: var(--c-back); }
-.ti-dados .chk   { border-color: var(--c-dados); }
-.ti-text .chk    { border-color: var(--c-text-c); }
-.ti-sup .chk     { border-color: var(--c-sup); }
-.ti-aprov .chk   { border-color: var(--c-aprov); }
-
-.chk.done { background: currentColor; border-color: currentColor; }
-.chk.done::after {
-  content: '';
-  display: block;
-  width: 4px;
-  height: 7px;
-  border: 1.5px solid #fff;
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
-  margin-top: -2px;
-  margin-left: 1px;
-}
-
-.t-body { flex: 1; min-width: 0; }
-
-.t-text {
-  font-size: 12px;
-  line-height: 1.4;
-  font-weight: 400;
-}
-
-.ti-design .t-text { color: #1E1660; }
-.ti-front .t-text  { color: #072E20; }
-.ti-back .t-text   { color: #3C2005; }
-.ti-dados .t-text  { color: #3A1008; }
-.ti-text .t-text   { color: #071E38; }
-.ti-sup .t-text    { color: #1C1A18; }
-.ti-aprov .t-text  { color: #3A0820; }
-
-.t-text.done-s { text-decoration: line-through; opacity: 0.45; }
-
-.t-meta {
-  font-size: 10px;
-  margin-top: 2px;
-  font-family: var(--font-mono);
-  opacity: 0.6;
-}
-
-.ti-design .t-meta { color: var(--c-design); }
-.ti-front .t-meta  { color: var(--c-front); }
-.ti-back .t-meta   { color: var(--c-back); }
-.ti-dados .t-meta  { color: var(--c-dados); }
-.ti-text .t-meta   { color: var(--c-text-c); }
-.ti-sup .t-meta    { color: var(--c-sup); }
-.ti-aprov .t-meta  { color: var(--c-aprov); }
-
-.t-del {
-  opacity: 0;
-  font-size: 11px;
-  cursor: pointer;
-  color: var(--c-text3);
-  padding: 1px 4px;
-  border-radius: 3px;
-  transition: opacity var(--transition);
-  flex-shrink: 0;
-  line-height: 1;
-  margin-top: 1px;
-}
-
-.task-item:hover .t-del { opacity: 0.5; }
-.t-del:hover { opacity: 1 !important; background: rgba(0,0,0,0.06); }
-
-.empty-tasks {
-  font-size: 11px;
-  color: var(--c-text3);
-  padding: 8px 0;
-  font-style: italic;
-}
-
-/* ─── Add Form ──────────────────────────────────── */
-.add-form {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px dashed var(--c-border2);
-  border-radius: var(--radius-md);
-  background: var(--c-bg);
-}
-
-.add-form select,
-.add-form input[type=text] {
-  border: 1px solid var(--c-border2);
-  border-radius: var(--radius-sm);
-  padding: 5px 9px;
-  font-size: 11px;
-  background: var(--c-surface);
-  color: var(--c-text);
-  font-family: var(--font-main);
-  outline: none;
-  transition: border-color var(--transition);
-}
-
-.add-form select:focus,
-.add-form input[type=text]:focus {
-  border-color: var(--c-text);
-}
-
-.add-form input[type=text] {
-  flex: 1;
-  min-width: 120px;
-}
-
-.add-form input::placeholder { color: var(--c-text3); }
-
-/* ─── Side cards ────────────────────────────────── */
-.team-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.team-row:last-child { border-bottom: none; }
-
-.tr-info { flex: 1; min-width: 0; }
-.tr-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tr-role { font-size: 10px; color: var(--c-text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.tr-count {
-  font-size: 9px;
-  font-family: var(--font-mono);
-  background: #FBDADA;
-  color: #8A2020;
-  padding: 1px 6px;
-  border-radius: 20px;
-  font-weight: 500;
-  min-width: 18px;
-  text-align: center;
-}
-
-.tr-ok {
-  font-size: 9px;
-  color: var(--c-done);
-  font-family: var(--font-mono);
-}
-
-/* ─── Activity ──────────────────────────────────── */
-.act-item {
-  display: flex;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.act-item:last-child { border-bottom: none; }
-
-.act-body {
-  flex: 1;
-  font-size: 11px;
-  color: var(--c-text2);
-  line-height: 1.45;
-}
-
-.act-body strong { font-weight: 600; color: var(--c-text); }
-.act-time { font-size: 9px; color: var(--c-text3); font-family: var(--font-mono); margin-top: 1px; display: block; }
-
-/* ─── Notes Card ────────────────────────────────── */
-.notes-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid;
-  padding: 14px 16px;
-  margin: 0;
-}
-
-.notes-card .card-label { margin-bottom: 8px; }
-
-.notes-text {
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-/* ─── New Version Form ──────────────────────────── */
-.nv-form {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border2);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
-  margin-bottom: 14px;
-  display: none;
-  animation: slideDown 0.15s ease;
-}
-
-.nv-form.open { display: block; }
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.nv-title {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 14px;
-  letter-spacing: -0.2px;
-}
-
-.nv-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-
-.form-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-text3);
-}
-
-.form-control {
-  border: 1px solid var(--c-border2);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  font-size: 12px;
-  background: var(--c-bg);
-  color: var(--c-text);
-  font-family: var(--font-main);
-  outline: none;
-  transition: border-color var(--transition);
-  width: 100%;
-}
-
-.form-control:focus { border-color: var(--c-text); background: var(--c-surface); }
-
-textarea.form-control {
-  resize: vertical;
-  min-height: 58px;
-  line-height: 1.5;
-}
-
-.nv-footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-
-/* ─── History ───────────────────────────────────── */
-.hist-entry { margin-bottom: 8px; }
-
-.hist-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--c-border);
-  transition: opacity var(--transition);
-}
-
-.hist-header:hover { opacity: 0.7; }
-
-.hist-badge {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
-  color: var(--c-text2);
-}
-
-.hist-meta {
-  flex: 1;
-  font-size: 10px;
-  color: var(--c-text3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hist-toggle { font-size: 10px; color: var(--c-text3); flex-shrink: 0; }
-
-.hist-body { padding: 8px 0 4px 4px; }
-
-.hist-sg { margin-bottom: 8px; }
-
-.hist-sg-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-text3);
-  margin-bottom: 3px;
-}
-
-.hist-line {
-  font-size: 11px;
-  color: var(--c-text2);
-  padding: 2px 0 2px 8px;
-  border-left: 2px solid var(--c-border);
-  text-decoration: line-through;
-  opacity: 0.55;
-  margin-bottom: 1px;
-  font-family: var(--font-mono);
-}
-
-/* ─── Scrollbar ─────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 2px; }
-
-/* ─── Micro-animations ──────────────────────────── */
-.card, .pipeline, .nv-form {
-  animation: fadeUp 0.2s ease both;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+  --bg:#F5F3EE;--surface:#FFF;--border:#E2DEDA;--border2:#C8C3BC;
+  --text:#1A1714;--text2:#6B6560;--text3:#9E9890;
+  --design:#4A3F9F;--design-bg:#EEEDFB;
+  --front:#0D6B4F;--front-bg:#E1F5EE;
+  --back:#7A4A0A;--back-bg:#FDF0DC;
+  --textc:#14548A;--textc-bg:#E4F1FA;
+  --sup:#4A4845;--sup-bg:#F0EDE8;
+  --aprov:#8A2252;--aprov-bg:#FAE8F2;
+  --done:#1D9E75;--block:#D83A3A;--doing:#2B7FDD;
+  --sb:210px;--tb:52px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
+
+/* shell */
+#shell{display:flex;height:100vh;overflow:hidden}
+
+/* sidebar */
+#sidebar{width:var(--sb);min-width:var(--sb);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20}
+.sb-head{padding:16px 14px 12px;border-bottom:1px solid var(--border)}
+.sb-logo{font-size:14px;font-weight:600;letter-spacing:-.3px;display:flex;align-items:baseline;gap:5px}
+.sb-logo .ver{font-family:var(--mono);font-size:9px;color:var(--text3);font-weight:400}
+.sb-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sb-sect{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:10px 14px 3px}
+.sb-scroll{flex:1;overflow-y:auto;padding:2px 6px 8px}
+.sb-scroll::-webkit-scrollbar{width:3px}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.ni{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:7px;cursor:pointer;transition:background .1s;margin-bottom:1px;position:relative;border-left:2px solid transparent}
+.ni:hover{background:var(--bg)}
+.ni.active{background:var(--bg);border-left-color:var(--pc,var(--text))}
+.ni .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ni .lbl{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ni .bdg{font-size:9px;font-family:var(--mono);background:#FBDADA;color:#8A2020;padding:1px 5px;border-radius:10px}
+.ni .rl{font-size:9px;color:var(--text3);white-space:nowrap}
+.dv{height:1px;background:var(--border);margin:5px 14px}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.sb-foot{border-top:1px solid var(--border);padding:8px 10px}
+.me-card{display:flex;align-items:center;gap:7px;padding:7px 8px;background:var(--bg);border-radius:7px;cursor:pointer}
+.me-card:hover{background:var(--border)}
+.me-info{flex:1;min-width:0}
+.me-info .n{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me-info .r{font-size:10px;color:var(--text3)}
+
+/* main */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* topbar */
+#topbar{height:var(--tb);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:10px;flex-shrink:0;z-index:15}
+.tb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tb-title{font-size:14px;font-weight:600;flex:1;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-ver{font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--bg);border:1px solid var(--border);padding:3px 8px;border-radius:5px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:500;font-family:var(--font);cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text);transition:all .1s;white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn.pri{background:var(--text);color:var(--surface);border-color:var(--text)}
+.btn.pri:hover{background:#2d2925}
+
+/* workspace */
+#workspace{display:flex;flex:1;overflow:hidden}
+
+/* pdf pane */
+#pdf-pane{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
+.pdf-bar{height:40px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;display:none}
+.pnb{background:none;border:1px solid var(--border);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--text2);font-family:var(--font);transition:all .1s}
+.pnb:hover:not(:disabled){background:var(--bg)}
+.pnb:disabled{opacity:.3;cursor:default}
+.pi{font-size:10px;font-family:var(--mono);color:var(--text3)}
+.sep{width:1px;height:16px;background:var(--border)}
+.hint{font-size:10px;color:var(--text3);font-family:var(--mono)}
+
+#drop-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);cursor:pointer;border:2px dashed var(--border2);margin:20px;border-radius:12px;transition:all .15s}
+#drop-zone:hover,#drop-zone.drag{border-color:var(--text2);background:var(--border)}
+#drop-zone .dz-ic{font-size:32px;opacity:.35}
+#drop-zone .dz-t{font-size:14px;font-weight:600;color:var(--text2)}
+#drop-zone .dz-s{font-size:11px;color:var(--text3)}
+#file-input{display:none}
+
+#pdf-scroll{flex:1;overflow:auto;padding:20px 0;background:#555;display:flex;flex-direction:column;align-items:center;gap:14px;display:none}
+#pdf-scroll::-webkit-scrollbar{width:5px}
+#pdf-scroll::-webkit-scrollbar-thumb{background:#888;border-radius:3px}
+
+.page-wrap{position:relative;display:inline-block;box-shadow:0 3px 20px rgba(0,0,0,.4);border-radius:2px;cursor:crosshair}
+.page-wrap canvas{display:block;border-radius:2px}
+
+/* pin */
+.pin{position:absolute;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg) translate(-50%,-100%);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid rgba(255,255,255,.75);box-shadow:0 2px 8px rgba(0,0,0,.35);transition:transform .1s;z-index:5}
+.pin:hover{transform:rotate(-45deg) translate(-50%,-100%) scale(1.2)}
+.pin .pn{transform:rotate(45deg);font-size:8px;font-weight:700;font-family:var(--mono);color:#fff;line-height:1}
+.pin.pin-done{opacity:.5}
+
+/* comment popup */
+#cpop{position:absolute;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:11px;box-shadow:0 8px 28px rgba(0,0,0,.2);width:288px;animation:popIn .14s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.94) translateY(-4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.cp-head{padding:11px 13px 9px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.cp-title{font-size:12px;font-weight:600;flex:1}
+.cp-pg{font-size:10px;font-family:var(--mono);color:var(--text3)}
+.cp-x{background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);padding:0 2px;line-height:1}
+.cp-x:hover{color:var(--text)}
+.cp-body{padding:11px 13px;display:flex;flex-direction:column;gap:8px}
+.fl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:3px}
+.fc{width:100%;border:1px solid var(--border2);border-radius:6px;padding:6px 8px;font-size:12px;background:var(--bg);color:var(--text);font-family:var(--font);outline:none;transition:border-color .1s}
+.fc:focus{border-color:var(--text);background:var(--surface)}
+textarea.fc{resize:vertical;min-height:58px;line-height:1.5}
+.pop-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.cp-foot{padding:9px 13px;border-top:1px solid var(--border);display:flex;gap:5px;justify-content:flex-end}
+
+/* tasks pane */
+#tasks-pane{width:330px;min-width:330px;display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+.tp-head{padding:13px 16px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.tp-title{font-size:13px;font-weight:600;flex:1;letter-spacing:-.2px}
+.tp-cnt{font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--bg);border:1px solid var(--border);padding:2px 7px;border-radius:20px}
+.tp-filters{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;flex-shrink:0}
+.fp{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;border:1px solid var(--border);color:var(--text3);background:var(--surface);transition:all .1s;font-family:var(--font)}
+.fp:hover{border-color:var(--border2)}
+.fp.on{background:var(--text);color:var(--surface);border-color:var(--text)}
+.tp-list{flex:1;overflow-y:auto;padding:10px 12px}
+.tp-list::-webkit-scrollbar{width:3px}
+.tp-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* task card */
+.tc{border-radius:9px;padding:9px 11px 9px 12px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;cursor:pointer;transition:opacity .1s;position:relative;border-left:3px solid transparent}
+.tc.td{background:var(--design-bg);border-left-color:var(--design)}
+.tc.tf{background:var(--front-bg);border-left-color:var(--front)}
+.tc.tb{background:var(--back-bg);border-left-color:var(--back)}
+.tc.tt{background:var(--textc-bg);border-left-color:var(--textc)}
+.tc.ts{background:var(--sup-bg);border-left-color:var(--sup)}
+.tc.ta{background:var(--aprov-bg);border-left-color:var(--aprov)}
+.tc.dk{opacity:.45}
+
+.chk{width:14px;height:14px;border-radius:4px;border:1.5px solid;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.td .chk{border-color:var(--design);color:var(--design)}
+.tf .chk{border-color:var(--front);color:var(--front)}
+.tb .chk{border-color:var(--back);color:var(--back)}
+.tt .chk{border-color:var(--textc);color:var(--textc)}
+.ts .chk{border-color:var(--sup);color:var(--sup)}
+.ta .chk{border-color:var(--aprov);color:var(--aprov)}
+.chk.ck{background:currentColor}
+.chk.ck::after{content:'';display:block;width:3px;height:6px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg);margin-top:-1px;margin-left:1px}
+
+.tc-b{flex:1;min-width:0}
+.tc-t{font-size:12px;line-height:1.4}
+.td .tc-t{color:#1E1660}
+.tf .tc-t{color:#072E20}
+.tb .tc-t{color:#3C2005}
+.tt .tc-t{color:#071E38}
+.ts .tc-t{color:#1C1A18}
+.ta .tc-t{color:#3A0820}
+.tc-t.ds{text-decoration:line-through;opacity:.4}
+
+.tc-m{display:flex;gap:5px;align-items:center;margin-top:4px;flex-wrap:wrap}
+.tc-who{font-size:10px;font-family:var(--mono);opacity:.65}
+.td .tc-who{color:var(--design)}.tf .tc-who{color:var(--front)}.tb .tc-who{color:var(--back)}.tt .tc-who{color:var(--textc)}.ts .tc-who{color:var(--sup)}.ta .tc-who{color:var(--aprov)}
+.tc-due{font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:8px;border:1px solid;opacity:.7}
+.td .tc-due{color:var(--design);border-color:var(--design)}.tf .tc-due{color:var(--front);border-color:var(--front)}.tb .tc-due{color:var(--back);border-color:var(--back)}.tt .tc-due{color:var(--textc);border-color:var(--textc)}.ts .tc-due{color:var(--sup);border-color:var(--sup)}.ta .tc-due{color:var(--aprov);border-color:var(--aprov)}
+.tc-due.ov{color:var(--block);border-color:var(--block);opacity:1}
+.tc-pg{font-size:9px;color:var(--text3);font-family:var(--mono)}
+.tc-type{font-size:9px;color:var(--text3);border:1px solid var(--border);padding:1px 5px;border-radius:8px}
+
+.del{opacity:0;font-size:11px;cursor:pointer;color:var(--text3);padding:1px 3px;border-radius:3px;position:absolute;top:7px;right:7px;transition:opacity .1s;line-height:1}
+.tc:hover .del{opacity:.4}
+.del:hover{opacity:1!important;background:rgba(0,0,0,.07)}
+
+.tp-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:28px 14px;text-align:center}
+.tp-empty .ei{font-size:26px;opacity:.2}
+.tp-empty .et{font-size:13px;font-weight:500;color:var(--text2)}
+.tp-empty .es{font-size:11px;color:var(--text3);line-height:1.5}
+
+/* pin number badge on task */
+.pin-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--mono);color:#fff;flex-shrink:0;margin-top:1px}
 </style>
 </head>
 <body>
-
 <div id="shell">
-  <div id="sidebar">
-    <div class="sb-header">
-      <div class="sb-wordmark">
-        <strong>MEC Tracker</strong>
-        <span>v1.0</span>
-      </div>
-      <div class="sb-sub">Publicações educacionais</div>
-    </div>
 
-    <div id="sb-nav" class="sb-nav">
-      <!-- built by JS -->
-    </div>
-
-    <div class="sb-footer">
-      <div class="me-card" id="me-card">
-        <div class="avatar" id="me-av" style="width:28px;height:28px;font-size:10px"></div>
-        <div class="me-info">
-          <div class="me-name" id="me-name">—</div>
-          <div class="me-role" id="me-role">—</div>
-        </div>
-      </div>
-    </div>
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo">MEC Tracker <span class="ver">2.0</span></div>
+    <div class="sb-sub">Publicações educacionais</div>
   </div>
-
-  <div id="main">
-    <div id="topbar">
-      <div class="tb-project-dot" id="tb-dot"></div>
-      <div class="tb-title" id="tb-title">—</div>
-      <div class="tb-ver" id="tb-ver">—</div>
-      <button class="btn btn-primary" id="btn-nv">+ Nova versão</button>
+  <div class="sb-scroll" id="sb-scroll"></div>
+  <div class="sb-foot">
+    <div class="me-card">
+      <div class="av" id="me-av" style="width:26px;height:26px;font-size:10px"></div>
+      <div class="me-info">
+        <div class="n" id="me-n">—</div>
+        <div class="r" id="me-r">—</div>
+      </div>
     </div>
-    <div id="content"></div>
   </div>
 </div>
 
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="tb-dot" id="tb-dot"></div>
+    <div class="tb-title" id="tb-title">Selecione um projeto</div>
+    <div class="tb-ver" id="tb-ver">—</div>
+    <button class="btn" onclick="document.getElementById('fi').click()">⬆ Upload PDF</button>
+    <button class="btn pri" id="btn-nv" style="display:none">+ Nova versão</button>
+    <input type="file" id="fi" accept="application/pdf">
+  </div>
+
+  <div id="workspace">
+    <!-- PDF pane -->
+    <div id="pdf-pane">
+      <div class="pdf-bar" id="pdf-bar">
+        <button class="pnb" id="bprev">←</button>
+        <span class="pi" id="pinfo">1 / 1</span>
+        <button class="pnb" id="bnext">→</button>
+        <div class="sep"></div>
+        <span class="hint">Clique no PDF para comentar &amp; criar tarefa</span>
+      </div>
+      <div id="drop-zone" onclick="document.getElementById('fi').click()">
+        <div class="dz-ic">📄</div>
+        <div class="dz-t">Faça o upload do PDF para revisar</div>
+        <div class="dz-s">Clique aqui ou arraste o arquivo · PDF até 50MB</div>
+      </div>
+      <div id="pdf-scroll"></div>
+    </div>
+
+    <!-- Tasks pane -->
+    <div id="tasks-pane">
+      <div class="tp-head">
+        <div class="tp-title">Tarefas</div>
+        <div class="tp-cnt" id="tp-cnt">0 abertas</div>
+      </div>
+      <div class="tp-filters" id="tp-filters">
+        <div class="fp on" data-f="all">Todas</div>
+        <div class="fp" data-f="design">Design</div>
+        <div class="fp" data-f="front">Front</div>
+        <div class="fp" data-f="back">Back</div>
+        <div class="fp" data-f="textc">Correção</div>
+        <div class="fp" data-f="sup">Supervisão</div>
+        <div class="fp" data-f="aprov">Aprovação</div>
+      </div>
+      <div class="tp-list" id="tp-list"></div>
+    </div>
+  </div>
+</div>
+</div>
+
 <script>
-/* ═══════════════════════════════════════════
-   DATA
-═══════════════════════════════════════════ */
-const MEMBERS = {
-  Marina:  { role: 'Design',              color: '#4A3F9F', bg: '#EEEDFB', type: 'design' },
-  Rodrigo: { role: 'Design',              color: '#4A3F9F', bg: '#EEEDFB', type: 'design' },
-  André:   { role: 'Frontend',            color: '#0D6B4F', bg: '#E1F5EE', type: 'front'  },
-  Anderson:{ role: 'Backend',             color: '#7A4A0A', bg: '#FDF0DC', type: 'back'   },
-  Eduardo: { role: 'Backend',             color: '#7A4A0A', bg: '#FDF0DC', type: 'back'   },
-  Nádia:   { role: 'Correção textual',    color: '#14548A', bg: '#E4F1FA', type: 'text'   },
-  Luiz:    { role: 'Supervisão inicial',  color: '#4A4845', bg: '#F0EDE8', type: 'sup'    },
-  Lucas:   { role: 'Supervisão final',    color: '#4A4845', bg: '#F0EDE8', type: 'sup'    },
-  Camila:  { role: 'Aprovação DMAPE',     color: '#8A2252', bg: '#FAE8F2', type: 'aprov'  },
-  SECADI:  { role: 'Aprovação de área',   color: '#8A2252', bg: '#FAE8F2', type: 'aprov'  },
-  SEB:     { role: 'Aprovação de área',   color: '#8A2252', bg: '#FAE8F2', type: 'aprov'  },
-  SESU:    { role: 'Aprovação de área',   color: '#8A2252', bg: '#FAE8F2', type: 'aprov'  },
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ── DATA ── */
+const MBR = {
+  Marina:  {role:'Design',            color:'#4A3F9F',bg:'#EEEDFB',type:'design'},
+  Rodrigo: {role:'Design',            color:'#4A3F9F',bg:'#EEEDFB',type:'design'},
+  André:   {role:'Frontend',          color:'#0D6B4F',bg:'#E1F5EE',type:'front'},
+  Anderson:{role:'Backend',           color:'#7A4A0A',bg:'#FDF0DC',type:'back'},
+  Eduardo: {role:'Backend',           color:'#7A4A0A',bg:'#FDF0DC',type:'back'},
+  Nádia:   {role:'Correção textual',  color:'#14548A',bg:'#E4F1FA',type:'textc'},
+  Luiz:    {role:'Supervisão inicial',color:'#4A4845',bg:'#F0EDE8',type:'sup'},
+  Lucas:   {role:'Supervisão final',  color:'#4A4845',bg:'#F0EDE8',type:'sup'},
+  Camila:  {role:'Aprovação DMAPE',   color:'#8A2252',bg:'#FAE8F2',type:'aprov'},
+  SECADI:  {role:'Aprovação de área', color:'#8A2252',bg:'#FAE8F2',type:'aprov'},
+  SEB:     {role:'Aprovação de área', color:'#8A2252',bg:'#FAE8F2',type:'aprov'},
+  SESU:    {role:'Aprovação de área', color:'#8A2252',bg:'#FAE8F2',type:'aprov'},
 };
 
-const TYPE_CSS = {
-  design: 'ti-design', front: 'ti-front', back: 'ti-back',
-  dados: 'ti-dados', text: 'ti-text', sup: 'ti-sup', aprov: 'ti-aprov'
+const PROJ = {
+  atm:  {name:'ATM — Aqui Tem MEC',          color:'#1D9E75'},
+  ats:  {name:'ATS — Universidades Federais', color:'#2B7FDD'},
+  atso: {name:'ATS — Orçamento',              color:'#C07A10'},
+  atmeq:{name:'ATM — Equidade Racial',        color:'#D85A30'},
 };
 
-const TYPE_LABEL = {
-  design: 'Design', front: 'Frontend', back: 'Backend',
-  dados: 'Dados', text: 'Correção textual', sup: 'Supervisão', aprov: 'Aprovação'
+const TL = {design:'Design',front:'Frontend',back:'Backend',textc:'Correção textual',sup:'Supervisão',aprov:'Aprovação'};
+const TC = {design:'#4A3F9F',front:'#0D6B4F',back:'#7A4A0A',textc:'#14548A',sup:'#4A4845',aprov:'#8A2252'};
+const TCSS = {design:'td',front:'tf',back:'tb',textc:'tt',sup:'ts',aprov:'ta'};
+
+let ST = {
+  proj:'atm', me:'Luiz', filter:'all',
+  pdf:null, pg:1, total:0, scale:1.35, loaded:false,
+  anns:{atm:[],ats:[],atso:[],atmeq:[]},
+  vers:{
+    atm:{v:'v2.1',d:'01/04/2026',a:'Eduardo'},
+    ats:{v:'v1.3',d:'28/03/2026',a:'Anderson'},
+    atso:{v:'v1.0',d:'20/03/2026',a:'Marina'},
+    atmeq:{v:'v1.1',d:'31/03/2026',a:'Marina'},
+  },
+  seq:1,
+  pending:null,
 };
 
-const STATUS_META = {
-  wait:    { label: 'Aguardando',         dot: 'wait'    },
-  doing:   { label: 'Em andamento',       dot: 'doing'   },
-  block:   { label: 'Bloqueado',          dot: 'block'   },
-  done:    { label: 'Concluído',          dot: 'done'    },
-  pending: { label: 'Pend. aprovação',    dot: 'pending' },
-};
-
-const STAGES = [
-  { key: 'dados',   name: 'Dado novo',       short: 'Dado',    dep: null,       owners: ['Anderson','Eduardo'] },
-  { key: 'lake',    name: 'Datalake',         short: 'Lake',    dep: 'dados',    owners: ['Anderson','Eduardo'] },
-  { key: 'back',    name: 'Backend',          short: 'Back',    dep: 'lake',     owners: ['Anderson','Eduardo'] },
-  { key: 'design',  name: 'Design',           short: 'Design',  dep: 'back',     owners: ['Marina','Rodrigo']   },
-  { key: 'front',   name: 'Frontend',         short: 'Front',   dep: 'design',   owners: ['André']              },
-  { key: 'texto',   name: 'Correção textual', short: 'Texto',   dep: 'front',    owners: ['Nádia']              },
-  { key: 'supinit', name: 'Sup. inicial',     short: 'Sup. I',  dep: 'texto',    owners: ['Luiz']               },
-  { key: 'supfin',  name: 'Sup. final',       short: 'Sup. F',  dep: 'supinit',  owners: ['Lucas']              },
-  { key: 'aprov',   name: 'Aprovação',        short: 'Aprov.',  dep: 'supfin',   owners: ['Camila','SECADI','SEB','SESU'] },
-];
-
-const PROJECTS = {
-  atm:  { name: 'ATM — Aqui Tem MEC',         color: '#1D9E75' },
-  ats:  { name: 'ATS — Universidades Federais', color: '#2B7FDD' },
-  atso: { name: 'ATS — Orçamento',             color: '#C07A10' },
-  atmeq:{ name: 'ATM — Equidade Racial',       color: '#D85A30' },
-};
-
-function mkStages() {
-  const s = {};
-  STAGES.forEach(st => { s[st.key] = { status: 'wait', tasks: [] }; });
-  return s;
-}
-
-function pad(n) { return String(n).padStart(2, '0'); }
-function today() {
-  const d = new Date();
-  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
-}
-
-let NID = 300;
-
-/* ── Initial State ── */
-const DATA = {
-  proj: 'atm',
-  me: 'Luiz',
-  activeStage: 'dados',
-  histOpen: {},
-  nvOpen: false,
-  projects: {
-    atm: {
-      desc: 'Salvador (BA) · Censo Escolar 2024 · Indicadores educacionais, repasses, programas e infraestrutura escolar.',
-      versions: [{
-        ver: 'v2.1', date: '01/04/2026', author: 'Eduardo',
-        notes: 'Atualização do Censo Escolar 2025. Dados de IDEB, matrículas por raça/cor e infraestrutura impactados.',
-        stages: {
-          dados: { status: 'done', tasks: [
-            { id:1, type:'dados', who:'Eduardo', text:'Receber e validar planilha Censo Escolar 2025 — Salvador', done:true  },
-            { id:2, type:'dados', who:'Anderson',text:'Conferir consistência das matrículas por etapa vs. total', done:true  },
-          ]},
-          lake: { status: 'done', tasks: [
-            { id:3, type:'dados', who:'Eduardo', text:'Ingerir no sandbox e rodar testes de consistência', done:true },
-            { id:4, type:'dados', who:'Anderson',text:'Validar queries de extração pós-ingestão', done:true },
-          ]},
-          back: { status: 'doing', tasks: [
-            { id:5, type:'back', who:'Anderson', text:'Atualizar endpoint /ideb com série histórica 2023', done:false },
-            { id:6, type:'back', who:'Eduardo',  text:'Revisar query de matrículas por etapa e modalidade', done:false },
-            { id:7, type:'back', who:'Anderson', text:'Validar retorno gráfico de pré-escola quilombola', done:true  },
-          ]},
-          design: { status: 'wait', tasks: [
-            { id:8,  type:'design', who:'Marina',  text:'Revisar mapa da Bahia — checar paleta de destaque após dado novo', done:false },
-            { id:9,  type:'design', who:'Rodrigo', text:'Atualizar gráficos de pizza de matrículas por raça/cor', done:false },
-            { id:10, type:'design', who:'Marina',  text:'Ajustar gráfico de barras do FUNDEB com nova série histórica', done:false },
-          ]},
-          front: { status: 'wait', tasks: [
-            { id:11, type:'front', who:'André', text:'Atualizar componente de gráfico IDEB anos iniciais e finais', done:false },
-            { id:12, type:'front', who:'André', text:'Corrigir tooltip mobile nos gráficos de pizza', done:false },
-          ]},
-          texto: { status: 'wait', tasks: [
-            { id:13, type:'text', who:'Nádia', text:'Revisar textos dos indicadores atualizados', done:false },
-            { id:14, type:'text', who:'Nádia', text:'Checar nomenclaturas e siglas conforme padrão MEC', done:false },
-          ]},
-          supinit: { status: 'wait', tasks: [
-            { id:15, type:'sup', who:'Luiz', text:'Supervisão inicial — validar consistência geral dos dados e layout', done:false },
-          ]},
-          supfin: { status: 'wait', tasks: [
-            { id:16, type:'sup', who:'Lucas', text:'Supervisão final — revisão completa antes de envio para aprovação', done:false },
-          ]},
-          aprov: { status: 'wait', tasks: [
-            { id:17, type:'aprov', who:'Camila', text:'Aprovação DMAPE — aval final da publicação', done:false },
-            { id:18, type:'aprov', who:'SEB',    text:'Aprovação de área — SEB', done:false },
-          ]},
-        }
-      }],
-      history: [],
-      activity: [
-        { who:'Eduardo', text:'validou queries pós-ingestão no sandbox', time:'Há 1 dia' },
-        { who:'Anderson',text:'concluiu validação retorno pré-escola quilombola', time:'Há 2 dias' },
-        { who:'Eduardo', text:'publicou versão v2.1', time:'Há 3 dias' },
-      ]
-    },
-    ats: {
-      desc: 'Diagnóstico das Universidades Federais — Censup 2024. Vagas, ingressantes, matriculados, concluintes e pós-graduação.',
-      versions: [{
-        ver: 'v1.3', date: '28/03/2026', author: 'Anderson',
-        notes: 'Correção de ingressantes 2024 — inconsistência em Computação e TIC na tabela resumo (pág. 6).',
-        stages: {
-          dados:   { status:'done',  tasks:[{ id:50,type:'dados',who:'Eduardo',  text:'Receber planilha Censup 2024 corrigida pelo Inep',done:true }]},
-          lake:    { status:'done',  tasks:[{ id:51,type:'dados',who:'Anderson', text:'Ingerir no datalake produção após validação',done:true }]},
-          back:    { status:'done',  tasks:[{ id:52,type:'back', who:'Anderson', text:'Corrigir query de ingressantes TIC — pág. 6',done:true }]},
-          design:  { status:'done',  tasks:[{ id:53,type:'design',who:'Rodrigo', text:'Sem impacto visual confirmado — aprovado',done:true }]},
-          front:   { status:'doing', tasks:[{ id:54,type:'front',who:'André',    text:'Atualizar tabela resumo com novo total de ingressantes',done:false }]},
-          texto:   { status:'wait',  tasks:[{ id:55,type:'text', who:'Nádia',    text:'Revisar legenda e texto da tabela resumo pág. 6',done:false }]},
-          supinit: { status:'wait',  tasks:[{ id:56,type:'sup',  who:'Luiz',     text:'Supervisão inicial ATS v1.3',done:false }]},
-          supfin:  { status:'wait',  tasks:[{ id:57,type:'sup',  who:'Lucas',    text:'Supervisão final ATS v1.3',done:false }]},
-          aprov:   { status:'wait',  tasks:[
-            { id:58,type:'aprov',who:'Camila',text:'Aprovação DMAPE',done:false },
-            { id:59,type:'aprov',who:'SESU',  text:'Aprovação de área — SESU',done:false },
-          ]},
-        }
-      }],
-      history: [],
-      activity: [{ who:'Anderson', text:'corrigiu query de ingressantes TIC', time:'Há 3 dias' }]
-    },
-    atso: {
-      desc: 'Relatório de orçamento e repasses do ensino superior. Aguardando dados do FNDE para início do pipeline.',
-      versions: [{
-        ver: 'v1.0', date: '20/03/2026', author: 'Marina',
-        notes: 'Versão inicial publicada. Pipeline aguardando chegada dos dados do FNDE.',
-        stages: mkStages()
-      }],
-      history: [],
-      activity: [{ who:'Marina', text:'publicou versão inicial v1.0', time:'Há 12 dias' }]
-    },
-    atmeq: {
-      desc: 'PNEERQ — Equidade Racial. Dados VAAR/FUNDEB 2026, índices ERER e diagnóstico por município.',
-      versions: [{
-        ver: 'v1.1', date: '31/03/2026', author: 'Marina',
-        notes: 'Índices ERER e seção normativa atualizados. Datalake bloqueado por falta de acesso ao sandbox.',
-        stages: {
-          dados:   { status:'done',  tasks:[{ id:80,type:'dados', who:'Eduardo', text:'Validar dados VAAR/FNDE 2026 recebidos',done:true }]},
-          lake:    { status:'block', tasks:[{ id:81,type:'dados', who:'Anderson',text:'Ingerir tabela de condicionalidades — aguardando acesso ao sandbox',done:false }]},
-          back:    { status:'wait',  tasks:[{ id:82,type:'back',  who:'Anderson',text:'Script de cálculo da condicionalidade III por município',done:false }]},
-          design:  { status:'wait',  tasks:[
-            { id:83,type:'design',who:'Marina',  text:'Rever diagrama dos 5 eixos da PNEERQ',done:false },
-            { id:84,type:'design',who:'Rodrigo', text:'Padronizar tipografia dos títulos de seção',done:false },
-          ]},
-          front:   { status:'wait',  tasks:[{ id:85,type:'front',who:'André', text:'Componente de gráfico VAAR com dado atualizado',done:false }]},
-          texto:   { status:'wait',  tasks:[{ id:86,type:'text', who:'Nádia', text:'Revisar seção normativa — portarias e leis 2025',done:false }]},
-          supinit: { status:'wait',  tasks:[{ id:87,type:'sup',  who:'Luiz',  text:'Supervisão inicial ATM Equidade v1.1',done:false }]},
-          supfin:  { status:'wait',  tasks:[{ id:88,type:'sup',  who:'Lucas', text:'Supervisão final ATM Equidade v1.1',done:false }]},
-          aprov:   { status:'wait',  tasks:[
-            { id:89,type:'aprov',who:'Camila', text:'Aprovação DMAPE',done:false },
-            { id:90,type:'aprov',who:'SECADI', text:'Aprovação de área — SECADI',done:false },
-          ]},
-        }
-      }],
-      history: [],
-      activity: [{ who:'Eduardo', text:'validou dados VAAR/FNDE 2026', time:'Há 2 dias' }]
-    },
-  }
-};
-
-/* ═══════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════ */
-function av(name, sz = 24, fs = 10) {
-  const m = MEMBERS[name] || { bg: '#F0EDE8', color: '#4A4845' };
-  return `<div class="avatar" style="width:${sz}px;height:${sz}px;font-size:${fs}px;background:${m.bg};color:${m.color};">${name.slice(0,2)}</div>`;
-}
-
-function isBlocked(stages, key) {
-  const st = STAGES.find(s => s.key === key);
-  if (!st || !st.dep) return false;
-  return stages[st.dep]?.status !== 'done';
-}
-
-function openCount(projKey) {
-  return Object.values(DATA.projects[projKey].versions[0].stages)
-    .reduce((s, st) => s + st.tasks.filter(t => !t.done).length, 0);
-}
-
-/* ═══════════════════════════════════════════
-   SIDEBAR
-═══════════════════════════════════════════ */
-function buildSidebar() {
-  const nav = document.getElementById('sb-nav');
-  let html = '';
-
-  // Projects
-  html += `<div class="sb-section">Projetos</div>`;
-  Object.entries(PROJECTS).forEach(([key, proj]) => {
-    const n = openCount(key);
-    html += `<div class="nav-proj${DATA.proj===key?' active':''}" data-proj="${key}" style="--proj-color:${proj.color}">
-      <div class="proj-dot" style="background:${proj.color}"></div>
-      <div class="proj-name">${proj.name.replace('— ','')}</div>
-      ${n ? `<div class="proj-badge">${n}</div>` : ''}
+/* ── SIDEBAR ── */
+function buildSB() {
+  const el = document.getElementById('sb-scroll');
+  let h = '<div class="sb-sect">Projetos</div>';
+  Object.entries(PROJ).forEach(([k,p]) => {
+    const n = ST.anns[k].filter(a=>!a.done).length;
+    h += `<div class="ni${ST.proj===k?' active':''}" data-proj="${k}" style="--pc:${p.color}">
+      <div class="dot" style="background:${p.color}"></div>
+      <div class="lbl">${p.name.replace('— ','')}</div>
+      ${n?`<div class="bdg">${n}</div>`:''}
     </div>`;
   });
-
-  // Members
-  html += `<div class="divider"></div>`;
-  html += `<div class="sb-section">Eu sou</div>`;
-
-  const roleOrder = ['Design','Frontend','Backend','Correção textual','Supervisão inicial','Supervisão final','Aprovação DMAPE','Aprovação de área'];
-  const sorted = Object.entries(MEMBERS).sort((a,b) => roleOrder.indexOf(a[1].role) - roleOrder.indexOf(b[1].role));
-
-  sorted.forEach(([name, m]) => {
-    html += `<div class="nav-member${DATA.me===name?' active':''}" data-who="${name}">
-      <div class="avatar" style="width:20px;height:20px;font-size:8px;background:${m.bg};color:${m.color}">${name.slice(0,2)}</div>
-      <div class="m-name">${name}</div>
-      <div class="m-role">${m.role.split(' ')[0]}</div>
+  h += '<div class="dv"></div><div class="sb-sect">Eu sou</div>';
+  Object.entries(MBR).forEach(([name,m]) => {
+    h += `<div class="ni${ST.me===name?' active':''}" data-who="${name}" style="--pc:${m.color}">
+      <div class="av" style="width:18px;height:18px;font-size:7px;background:${m.bg};color:${m.color}">${name.slice(0,2)}</div>
+      <div class="lbl">${name}</div>
+      <div class="rl">${m.role.split(' ')[0]}</div>
     </div>`;
   });
+  el.innerHTML = h;
 
-  nav.innerHTML = html;
+  const m = MBR[ST.me]||{bg:'#F0EDE8',color:'#4A4845',role:'—'};
+  const av = document.getElementById('me-av');
+  Object.assign(av.style,{background:m.bg,color:m.color,width:'26px',height:'26px',fontSize:'10px'});
+  av.textContent = ST.me.slice(0,2);
+  document.getElementById('me-n').textContent = ST.me;
+  document.getElementById('me-r').textContent = m.role;
 
-  // Me card
-  const me = MEMBERS[DATA.me] || { bg: '#F0EDE8', color: '#4A4845', role: '—' };
-  const avEl = document.getElementById('me-av');
-  avEl.style.background = me.bg;
-  avEl.style.color = me.color;
-  avEl.style.width = '28px';
-  avEl.style.height = '28px';
-  avEl.style.fontSize = '10px';
-  avEl.textContent = DATA.me.slice(0, 2);
-  document.getElementById('me-name').textContent = DATA.me;
-  document.getElementById('me-role').textContent = me.role;
+  document.getElementById('tb-dot').style.background = PROJ[ST.proj].color;
+  document.getElementById('tb-title').textContent = PROJ[ST.proj].name;
+  const vr = ST.vers[ST.proj];
+  document.getElementById('tb-ver').textContent = `${vr.v} · ${vr.d}`;
+  document.getElementById('btn-nv').style.display = ST.loaded ? '' : 'none';
 
-  // Badges
-  Object.keys(PROJECTS).forEach(k => {
-    const n = openCount(k);
-    const els = nav.querySelectorAll(`[data-proj="${k}"] .proj-badge`);
-    els.forEach(el => { el.textContent = n || ''; el.style.display = n ? '' : 'none'; });
+  el.querySelectorAll('[data-proj]').forEach(e => e.addEventListener('click', () => {
+    ST.proj=e.dataset.proj; ST.pdf=null; ST.loaded=false; ST.pg=1;
+    showDZ(); buildSB(); renderList();
+  }));
+  el.querySelectorAll('[data-who]').forEach(e => e.addEventListener('click', () => {
+    ST.me=e.dataset.who; buildSB();
+  }));
+}
+
+/* ── PDF ── */
+function showDZ() {
+  document.getElementById('drop-zone').style.display='flex';
+  document.getElementById('pdf-scroll').style.display='none';
+  document.getElementById('pdf-bar').style.display='none';
+}
+function showPDF() {
+  document.getElementById('drop-zone').style.display='none';
+  document.getElementById('pdf-scroll').style.display='flex';
+  document.getElementById('pdf-bar').style.display='flex';
+}
+
+document.getElementById('fi').addEventListener('change', e => {
+  const f = e.target.files[0]; if(f) loadPDF(f); e.target.value='';
+});
+
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type==='application/pdf') loadPDF(f);
+});
+
+async function loadPDF(file) {
+  const buf = await file.arrayBuffer();
+  try {
+    const doc = await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+    ST.pdf = doc; ST.total = doc.numPages; ST.pg = 1; ST.loaded = true;
+    showPDF();
+    await renderPages();
+    updPI();
+    buildSB(); renderList();
+  } catch(e) {
+    alert('Não foi possível abrir o PDF. Verifique se o arquivo não está protegido por senha.');
+  }
+}
+
+async function renderPages() {
+  const scroll = document.getElementById('pdf-scroll');
+  scroll.innerHTML = '';
+  for (let p=1; p<=ST.total; p++) {
+    const page = await ST.pdf.getPage(p);
+    const vp   = page.getViewport({scale:ST.scale});
+    const wrap = document.createElement('div');
+    wrap.className = 'page-wrap';
+    wrap.dataset.page = p;
+    wrap.style.width  = vp.width+'px';
+    wrap.style.height = vp.height+'px';
+    const cv = document.createElement('canvas');
+    cv.width=vp.width; cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+    wrap.appendChild(cv);
+    scroll.appendChild(wrap);
+    wrap.addEventListener('click', e => onPageClick(e,wrap,p));
+  }
+  renderPins();
+}
+
+function updPI() {
+  document.getElementById('pinfo').textContent = `${ST.pg} / ${ST.total}`;
+  document.getElementById('bprev').disabled = ST.pg<=1;
+  document.getElementById('bnext').disabled = ST.pg>=ST.total;
+}
+
+document.getElementById('bprev').addEventListener('click', () => goPage(ST.pg-1));
+document.getElementById('bnext').addEventListener('click', () => goPage(ST.pg+1));
+
+function goPage(p) {
+  if(p<1||p>ST.total) return;
+  ST.pg=p; updPI();
+  const w=document.querySelector(`[data-page="${p}"]`);
+  if(w) w.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+document.getElementById('pdf-scroll').addEventListener('scroll', () => {
+  const sc = document.getElementById('pdf-scroll');
+  document.querySelectorAll('.page-wrap').forEach(w => {
+    if(w.offsetTop <= sc.scrollTop+300) {
+      const p=parseInt(w.dataset.page);
+      if(p!==ST.pg){ST.pg=p;updPI();}
+    }
+  });
+}, {passive:true});
+
+/* ── CLICK TO COMMENT ── */
+function onPageClick(e, wrap, pageNum) {
+  if (e.target.closest('#cpop')||e.target.closest('.pin')) return;
+  closePopup();
+
+  const rect = wrap.getBoundingClientRect();
+  const xPct = ((e.clientX-rect.left)/wrap.offsetWidth*100).toFixed(2);
+  const yPct = ((e.clientY-rect.top) /wrap.offsetHeight*100).toFixed(2);
+  ST.pending = {x:xPct, y:yPct, page:pageNum};
+
+  const defType = (MBR[ST.me]||{}).type||'back';
+  const due7 = (() => { const d=new Date(); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })();
+
+  const pop = document.createElement('div');
+  pop.id = 'cpop';
+  pop.innerHTML = `
+    <div class="cp-head">
+      <div class="cp-title">Novo comentário</div>
+      <div class="cp-pg">pág ${pageNum}</div>
+      <button class="cp-x" id="cpx">✕</button>
+    </div>
+    <div class="cp-body">
+      <div>
+        <label class="fl">O que precisa ser feito?</label>
+        <textarea class="fc" id="pp-txt" placeholder="Descreva a tarefa… (Ctrl+Enter para salvar)" rows="3"></textarea>
+      </div>
+      <div class="pop-row">
+        <div>
+          <label class="fl">Área</label>
+          <select class="fc" id="pp-type">
+            <option value="design"${defType==='design'?' selected':''}>Design</option>
+            <option value="front"${defType==='front'?' selected':''}>Frontend</option>
+            <option value="back"${defType==='back'?' selected':''}>Backend</option>
+            <option value="textc"${defType==='textc'?' selected':''}>Correção textual</option>
+            <option value="sup"${defType==='sup'?' selected':''}>Supervisão</option>
+            <option value="aprov"${defType==='aprov'?' selected':''}>Aprovação</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Responsável</label>
+          <select class="fc" id="pp-who">
+            ${Object.keys(MBR).map(n=>`<option${n===ST.me?' selected':''}>${n}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="fl">Prazo</label>
+        <input type="date" class="fc" id="pp-due" value="${due7}">
+      </div>
+    </div>
+    <div class="cp-foot">
+      <button class="btn" id="pp-cancel" style="font-size:11px;padding:5px 10px">Cancelar</button>
+      <button class="btn pri" id="pp-save" style="font-size:11px;padding:5px 10px">Criar tarefa →</button>
+    </div>`;
+
+  // Position relative to wrap
+  const pxAbs = parseFloat(xPct)/100*wrap.offsetWidth;
+  const pyAbs = parseFloat(yPct)/100*wrap.offsetHeight;
+  pop.style.position = 'absolute';
+  let pl = pxAbs + 20;
+  if (pl + 296 > wrap.offsetWidth) pl = pxAbs - 304;
+  pop.style.left = Math.max(4, pl) + 'px';
+  pop.style.top  = Math.max(4, pyAbs - 16) + 'px';
+  wrap.appendChild(pop);
+
+  setTimeout(() => { const t=document.getElementById('pp-txt'); if(t)t.focus(); }, 60);
+
+  document.getElementById('cpx').onclick      = closePopup;
+  document.getElementById('pp-cancel').onclick = closePopup;
+  document.getElementById('pp-save').onclick   = saveComment;
+
+  pop.querySelector('#pp-txt').addEventListener('keydown', e => {
+    if (e.key==='Enter'&&(e.ctrlKey||e.metaKey)) saveComment();
+  });
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', outsideClose, {once:true,capture:true});
+  }, 100);
+}
+
+function outsideClose(e) {
+  const pop = document.getElementById('cpop');
+  if (pop && !pop.contains(e.target)) closePopup();
+}
+
+function closePopup() {
+  document.removeEventListener('click', outsideClose, {capture:true});
+  const p = document.getElementById('cpop'); if(p) p.remove();
+  ST.pending = null;
+}
+
+function saveComment() {
+  const txt = document.getElementById('pp-txt')?.value.trim();
+  if (!txt) { document.getElementById('pp-txt')?.focus(); return; }
+  const type = document.getElementById('pp-type').value;
+  const who  = document.getElementById('pp-who').value;
+  const due  = document.getElementById('pp-due').value;
+
+  ST.anns[ST.proj].push({
+    id: ST.seq++, txt, type, who, due,
+    page: ST.pending.page,
+    x: ST.pending.x, y: ST.pending.y,
+    done: false,
+    by: ST.me,
+    at: new Date().toLocaleDateString('pt-BR'),
+  });
+
+  closePopup();
+  renderPins();
+  renderList();
+  buildSB();
+}
+
+/* ── PINS ── */
+function renderPins() {
+  document.querySelectorAll('.pin').forEach(p=>p.remove());
+  ST.anns[ST.proj].forEach((ann,idx) => {
+    const wrap = document.querySelector(`[data-page="${ann.page}"]`);
+    if (!wrap) return;
+    const pin = document.createElement('div');
+    pin.className = 'pin' + (ann.done?' pin-done':'');
+    pin.dataset.aid = ann.id;
+    pin.style.left = ann.x + '%';
+    pin.style.top  = ann.y + '%';
+    pin.style.background = ann.done ? '#B0AAA3' : (TC[ann.type]||'#888');
+    pin.innerHTML = `<span class="pn">${idx+1}</span>`;
+    pin.title = `${ann.who} · ${TL[ann.type]||ann.type} · pág ${ann.page}`;
+    pin.addEventListener('click', e => {
+      e.stopPropagation();
+      const tc = document.querySelector(`[data-tid="${ann.id}"]`);
+      if (tc) {
+        tc.scrollIntoView({behavior:'smooth',block:'nearest'});
+        const orig = tc.style.outline;
+        tc.style.outline = `2px solid ${TC[ann.type]||'#888'}`;
+        tc.style.outlineOffset = '1px';
+        setTimeout(() => { tc.style.outline=orig; tc.style.outlineOffset=''; }, 1000);
+      }
+    });
+    wrap.appendChild(pin);
   });
 }
 
-/* ═══════════════════════════════════════════
-   MAIN RENDER
-═══════════════════════════════════════════ */
-function render() {
-  buildSidebar();
+/* ── TASK LIST ── */
+function renderList() {
+  const all = ST.anns[ST.proj];
+  const filt = ST.filter==='all' ? all : all.filter(a=>a.type===ST.filter);
+  const open = all.filter(a=>!a.done).length;
+  document.getElementById('tp-cnt').textContent = `${open} aberta${open!==1?'s':''}`;
 
-  const proj      = DATA.projects[DATA.proj];
-  const projMeta  = PROJECTS[DATA.proj];
-  const cur       = proj.versions[0];
-  const stgs      = cur.stages;
-  const aSt       = DATA.activeStage;
-  const stInfo    = STAGES.find(s => s.key === aSt);
-  const stData    = stgs[aSt];
-  const blocked   = isBlocked(stgs, aSt);
-  const depSt     = stInfo.dep ? STAGES.find(s => s.key === stInfo.dep) : null;
+  const el = document.getElementById('tp-list');
 
-  // Topbar
-  document.getElementById('tb-dot').style.background   = projMeta.color;
-  document.getElementById('tb-title').textContent = projMeta.name;
-  document.getElementById('tb-ver').textContent   = `${cur.ver} · ${cur.date}`;
-
-  // Stats
-  const totalT = Object.values(stgs).reduce((s,st) => s + st.tasks.length, 0);
-  const doneT  = Object.values(stgs).reduce((s,st) => s + st.tasks.filter(t=>t.done).length, 0);
-  const myT    = Object.values(stgs).reduce((s,st) => s + st.tasks.filter(t=>t.who===DATA.me&&!t.done).length, 0);
-
-  // Pipeline HTML
-  const pipelineHtml = `<div class="pipeline">
-    ${STAGES.map((st, i) => {
-      const s  = stgs[st.key];
-      const sm = STATUS_META[s.status];
-      const assigned = [...new Set(s.tasks.map(t=>t.who))].slice(0,4);
-      return `<div class="pipe-stage${DATA.activeStage===st.key?' active':''}" data-stage="${st.key}">
-        <div class="ps-num">${i+1}</div>
-        <div class="ps-name">${st.short}</div>
-        <div class="ps-status">
-          <div class="status-dot ${sm.dot}"></div>
-          <span>${s.tasks.length}t · ${sm.label}</span>
-        </div>
-        <div class="ps-avatars">
-          ${assigned.map(n => {
-            const m = MEMBERS[n] || { bg:'#eee', color:'#888' };
-            return `<div class="ps-av" style="background:${m.bg};color:${m.color}">${n.slice(0,2)}</div>`;
-          }).join('')}
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  // Context notice
-  let noticeHtml = '';
-  if (blocked) {
-    noticeHtml = `<div class="notice blocked"><strong>Bloqueado</strong> — aguardando conclusão de "<strong>${depSt?.name}</strong>".</div>`;
-  } else if (stInfo.dep && stgs[stInfo.dep]?.status === 'done') {
-    noticeHtml = `<div class="notice ready"><strong>Pré-requisito concluído</strong> — ${depSt?.name} está pronto. Este estágio pode avançar.</div>`;
-  } else if (stInfo.key === 'aprov') {
-    noticeHtml = `<div class="notice approval"><strong>Etapa de aprovação formal</strong> — requer aval de Camila (DMAPE) e da área responsável.</div>`;
+  if (!all.length) {
+    el.innerHTML = `<div class="tp-empty">
+      <div class="ei">📋</div>
+      <div class="et">${ST.loaded?'Nenhum comentário ainda':'Sem PDF carregado'}</div>
+      <div class="es">${ST.loaded?'Clique em qualquer área do PDF para criar uma tarefa':'Faça o upload do PDF para começar a revisar'}</div>
+    </div>`; return;
+  }
+  if (!filt.length) {
+    el.innerHTML = `<div class="tp-empty">
+      <div class="ei">🔍</div>
+      <div class="et">Nenhuma tarefa aqui</div>
+      <div class="es">Selecione outro filtro</div>
+    </div>`; return;
   }
 
-  // Status pills
-  const statPills = Object.entries(STATUS_META).map(([k,v]) =>
-    `<div class="sp s-${k}${stData.status===k?' sel-'+k:''}" data-ss="${k}">${v.label}</div>`
-  ).join('');
+  const today = new Date(); today.setHours(0,0,0,0);
 
-  // Role legend
-  const legend = `<div class="role-legend">
-    ${[['design','#4A3F9F','Design'],['front','#0D6B4F','Frontend'],['back','#7A4A0A','Backend'],
-       ['text','#14548A','Correção textual'],['sup','#4A4845','Supervisão'],['aprov','#8A2252','Aprovação']
-      ].map(([,c,l]) => `<div class="rl"><div class="rl-dot" style="background:${c}"></div>${l}</div>`).join('')}
-  </div>`;
+  const sorted = [...filt].sort((a,b) => {
+    if (a.done!==b.done) return a.done?1:-1;
+    return a.page-b.page;
+  });
 
-  // Tasks
-  const myTasks    = stData.tasks.filter(t => t.who === DATA.me);
-  const otherTasks = stData.tasks.filter(t => t.who !== DATA.me);
+  const annIdx = (id) => all.findIndex(a=>a.id===id)+1;
 
-  function taskEl(t) {
-    const m   = MEMBERS[t.who] || { type:'back' };
-    const css = TYPE_CSS[t.type] || TYPE_CSS[m.type] || 'ti-back';
-    return `<div class="task-item ${css}">
-      <div class="chk${t.done?' done':''}" data-cht="${t.id}"></div>
-      <div class="t-body">
-        <div class="t-text${t.done?' done-s':''}">${t.text}</div>
-        <div class="t-meta">${TYPE_LABEL[t.type]||t.type} · ${t.who}</div>
+  el.innerHTML = sorted.map(ann => {
+    const css = TCSS[ann.type]||'tb';
+    const num = annIdx(ann.id);
+    const ov  = ann.due&&!ann.done&&new Date(ann.due)<today;
+    const due = ann.due ? fmtDate(ann.due) : '';
+    const pinColor = TC[ann.type]||'#888';
+
+    return `<div class="tc ${css}${ann.done?' dk':''}" data-tid="${ann.id}">
+      <div class="pin-num" style="background:${ann.done?'#B0AAA3':pinColor}">${num}</div>
+      <div class="chk${ann.done?' ck':''}" data-ck="${ann.id}"></div>
+      <div class="tc-b">
+        <div class="tc-t${ann.done?' ds':''}">${ann.txt}</div>
+        <div class="tc-m">
+          <span class="tc-who">${ann.who}</span>
+          ${due?`<span class="tc-due${ov?' ov':''}">${ov?'⚠ ':''}${due}</span>`:''}
+          <span class="tc-pg">p.${ann.page}</span>
+          <span class="tc-type">${TL[ann.type]||ann.type}</span>
+        </div>
       </div>
-      <div class="t-del" data-del="${t.id}" title="Remover">✕</div>
+      <div class="del" data-del="${ann.id}">✕</div>
     </div>`;
-  }
+  }).join('');
 
-  let tasksHtml = '';
-  if (!stData.tasks.length) {
-    tasksHtml = `<div class="empty-tasks">Nenhuma tarefa neste estágio.</div>`;
-  } else if (myTasks.length) {
-    tasksHtml = `<div class="sect-lbl">${av(DATA.me, 16, 7)} Para ${DATA.me}</div>
-      ${myTasks.map(taskEl).join('')}
-      ${otherTasks.length ? `<div class="sect-lbl" style="margin-top:10px">Para o time</div>${otherTasks.map(taskEl).join('')}` : ''}`;
-  } else {
-    tasksHtml = stData.tasks.map(taskEl).join('');
-  }
-
-  // Add form
-  const addForm = `<div class="add-form">
-    <select id="new-type" title="Área">
-      <option value="design">Design</option>
-      <option value="front">Frontend</option>
-      <option value="back">Backend</option>
-      <option value="dados">Dados</option>
-      <option value="text">Correção textual</option>
-      <option value="sup">Supervisão</option>
-      <option value="aprov">Aprovação</option>
-    </select>
-    <select id="new-who" title="Responsável">
-      ${Object.keys(MEMBERS).map(n => `<option${n===DATA.me?' selected':''}>${n}</option>`).join('')}
-    </select>
-    <input type="text" id="new-text" placeholder="Descreva a tarefa e pressione Enter…">
-    <button class="btn btn-primary" data-add="1" style="font-size:11px;padding:5px 12px">+ Tarefa</button>
-  </div>`;
-
-  // Stage detail
-  const stageOwners = stInfo.owners.join(', ');
-  const stageHtml = `<div class="card">
-    <div class="stage-header">
-      <div class="stage-num-badge">${STAGES.indexOf(stInfo)+1} de ${STAGES.length}</div>
-      <div class="stage-name">${stInfo.name}</div>
-      <div class="stage-count">${stData.tasks.filter(t=>t.done).length}/${stData.tasks.length}</div>
-      <div class="stage-owner-tag">${stageOwners}</div>
-    </div>
-    ${noticeHtml}
-    ${legend}
-    <div class="status-pills">${statPills}</div>
-    ${tasksHtml}
-    ${addForm}
-  </div>`;
-
-  // History
-  let histHtml = '';
-  if (proj.history.length) {
-    histHtml = `<div class="card">
-      <div class="card-label">Histórico de versões</div>
-      ${proj.history.map((h, hi) => {
-        const open = DATA.histOpen[hi];
-        const stageRows = STAGES.map(st => {
-          const ht = h.stages[st.key]?.tasks || [];
-          if (!ht.length) return '';
-          return `<div class="hist-sg">
-            <div class="hist-sg-label">${st.name}</div>
-            ${ht.map(t=>`<div class="hist-line">${t.who} — ${t.text}</div>`).join('')}
-          </div>`;
-        }).join('');
-        return `<div class="hist-entry">
-          <div class="hist-header" data-ht="${hi}">
-            <div class="hist-badge">${h.ver}</div>
-            <div class="hist-meta">${h.date} · ${h.author} · ${h.notes.slice(0,52)}${h.notes.length>52?'…':''}</div>
-            <div class="hist-toggle">${open ? '▲' : '▼'}</div>
-          </div>
-          ${open ? `<div class="hist-body">${stageRows}</div>` : ''}
-        </div>`;
-      }).join('')}
-    </div>`;
-  }
-
-  // New version form
-  const nvForm = `<div class="nv-form${DATA.nvOpen?' open':''}" id="nv-form">
-    <div class="nv-title">Publicar nova versão</div>
-    <div class="nv-grid">
-      <div class="form-group">
-        <label class="form-label">Número da versão</label>
-        <input class="form-control" type="text" id="u-ver" placeholder="Ex: v2.2">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Responsável</label>
-        <select class="form-control" id="u-author">
-          ${Object.keys(MEMBERS).map(n=>`<option${n===DATA.me?' selected':''}>${n}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">O que mudou nessa versão?</label>
-      <textarea class="form-control" id="u-notes" placeholder="Descreva as principais alterações…"></textarea>
-    </div>
-    <div class="nv-footer">
-      <button class="btn" data-nvcancel="1">Cancelar</button>
-      <button class="btn btn-primary" data-nvsave="1">Publicar e reiniciar pipeline →</button>
-    </div>
-  </div>`;
-
-  // Right column — Team
-  const teamCard = `<div class="card">
-    <div class="card-label">Equipe</div>
-    ${Object.entries(MEMBERS).map(([name, m]) => {
-      const open = Object.values(stgs).reduce((s,st)=>s+st.tasks.filter(t=>t.who===name&&!t.done).length, 0);
-      return `<div class="team-row">
-        <div class="avatar" style="width:24px;height:24px;font-size:9px;background:${m.bg};color:${m.color}">${name.slice(0,2)}</div>
-        <div class="tr-info">
-          <div class="tr-name">${name}</div>
-          <div class="tr-role">${m.role}</div>
-        </div>
-        ${open ? `<div class="tr-count">${open}</div>` : `<div class="tr-ok">✓</div>`}
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  // Right column — Activity
-  const actCard = `<div class="card">
-    <div class="card-label">Atividade</div>
-    ${(proj.activity||[]).slice(0,5).map(a => {
-      const m = MEMBERS[a.who] || { bg:'#eee', color:'#888' };
-      return `<div class="act-item">
-        <div class="avatar" style="width:22px;height:22px;font-size:9px;background:${m.bg};color:${m.color};flex-shrink:0">${a.who.slice(0,2)}</div>
-        <div class="act-body">
-          <strong>${a.who}</strong> ${a.text}
-          <span class="act-time">${a.time}</span>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  // Right column — Notes
-  const notesCard = `<div class="notes-card" style="background:${projMeta.color}0C;border-color:${projMeta.color}40;">
-    <div class="card-label" style="color:${projMeta.color}">Versão ${cur.ver}</div>
-    <div class="notes-text" style="color:#4A4845">${cur.notes}</div>
-  </div>`;
-
-  // Doc header
-  const docCard = `<div class="card">
-    <div class="doc-header">
-      <div class="doc-thumb">
-        <div class="doc-thumb-top" style="background:${projMeta.color}20;color:${projMeta.color}">
-          ${cur.ver}
-        </div>
-        <div class="doc-thumb-lines">
-          ${[80,55,90,70,85,60,75,90].map(w=>`<div class="dl" style="width:${w}%"></div>`).join('')}
-        </div>
-      </div>
-      <div class="doc-info">
-        <div class="doc-title">${projMeta.name}</div>
-        <div class="doc-desc">${proj.desc}</div>
-        <div class="doc-tags">
-          <span class="tag" style="background:${projMeta.color}15;color:${projMeta.color};border-color:${projMeta.color}50">${cur.ver}</span>
-          <span class="tag">${cur.date}</span>
-          <span class="tag">por ${cur.author}</span>
-        </div>
-      </div>
-      <div class="doc-stats">
-        <div class="stat-item"><span class="stat-label">Tarefas</span><span class="stat-val">${totalT}</span></div>
-        <div class="stat-item"><span class="stat-label">Feitas</span><span class="stat-val">${doneT}</span></div>
-        <div class="stat-item"><span class="stat-label">Minhas</span><span class="stat-val" style="color:${myT>0?'#D83A3A':'#1D9E75'}">${myT}</span></div>
-      </div>
-    </div>
-  </div>`;
-
-  // Assemble
-  document.getElementById('content').innerHTML = `
-    <div class="layout-cols">
-      <div class="col-main">
-        ${nvForm}
-        ${docCard}
-        ${pipelineHtml}
-        ${stageHtml}
-        ${histHtml}
-      </div>
-      <div class="col-side">
-        ${teamCard}
-        ${actCard}
-        ${notesCard}
-      </div>
-    </div>`;
-
-  attachEvents();
-}
-
-/* ═══════════════════════════════════════════
-   EVENTS
-═══════════════════════════════════════════ */
-function attachEvents() {
-  // Project nav
-  document.querySelectorAll('[data-proj]').forEach(el => el.addEventListener('click', () => {
-    DATA.proj = el.dataset.proj;
-    DATA.activeStage = 'dados';
-    DATA.histOpen = {};
-    DATA.nvOpen = false;
-    document.querySelectorAll('[data-proj]').forEach(e => e.classList.remove('active'));
-    el.classList.add('active');
-    render();
+  el.querySelectorAll('[data-ck]').forEach(e => e.addEventListener('click', ev => {
+    ev.stopPropagation();
+    const id = parseInt(e.dataset.ck);
+    const ann = ST.anns[ST.proj].find(a=>a.id===id);
+    if(ann){ann.done=!ann.done; renderPins(); renderList(); buildSB();}
   }));
 
-  // Member nav
-  document.querySelectorAll('[data-who]').forEach(el => el.addEventListener('click', () => {
-    DATA.me = el.dataset.who;
-    document.querySelectorAll('[data-who]').forEach(e => e.classList.remove('active'));
-    el.classList.add('active');
-    render();
+  el.querySelectorAll('[data-del]').forEach(e => e.addEventListener('click', ev => {
+    ev.stopPropagation();
+    const id = parseInt(e.dataset.del);
+    ST.anns[ST.proj] = ST.anns[ST.proj].filter(a=>a.id!==id);
+    renderPins(); renderList(); buildSB();
   }));
 
-  // Pipeline stage click
-  document.querySelectorAll('.pipe-stage').forEach(el => el.addEventListener('click', () => {
-    DATA.activeStage = el.dataset.stage;
-    render();
-  }));
-
-  // Status pills
-  document.querySelectorAll('[data-ss]').forEach(el => el.addEventListener('click', () => {
-    const proj = DATA.projects[DATA.proj];
-    proj.versions[0].stages[DATA.activeStage].status = el.dataset.ss;
-    proj.activity.unshift({ who: DATA.me, text: `marcou "${DATA.activeStage}" como ${el.textContent}`, time: 'Agora' });
-    render();
-  }));
-
-  // Check task
-  document.querySelectorAll('[data-cht]').forEach(el => el.addEventListener('click', () => {
-    const id = parseInt(el.dataset.cht);
-    const proj = DATA.projects[DATA.proj];
-    const cur  = proj.versions[0];
-    for (const st of STAGES) {
-      const t = cur.stages[st.key].tasks.find(t => t.id === id);
-      if (t) {
-        t.done = !t.done;
-        proj.activity.unshift({ who: DATA.me, text: `${t.done?'concluiu':'reabriu'}: ${t.text.slice(0,42)}…`, time: 'Agora' });
-        break;
+  el.querySelectorAll('.tc').forEach(e => e.addEventListener('click', () => {
+    const id = parseInt(e.dataset.tid);
+    const ann = ST.anns[ST.proj].find(a=>a.id===id);
+    if(!ann) return;
+    const pin = document.querySelector(`.pin[data-aid="${ann.id}"]`);
+    if(pin){
+      const wrap=document.querySelector(`[data-page="${ann.page}"]`);
+      if(wrap){
+        wrap.scrollIntoView({behavior:'smooth',block:'center'});
+        const orig=pin.style.transform;
+        pin.style.transform='rotate(-45deg) translate(-50%,-100%) scale(1.35)';
+        pin.style.zIndex='10';
+        setTimeout(()=>{pin.style.transform=orig;pin.style.zIndex='5';},800);
       }
     }
-    render();
-  }));
-
-  // Delete task
-  document.querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', () => {
-    const id  = parseInt(el.dataset.del);
-    const cur = DATA.projects[DATA.proj].versions[0];
-    STAGES.forEach(st => { cur.stages[st.key].tasks = cur.stages[st.key].tasks.filter(t => t.id !== id); });
-    render();
-  }));
-
-  // Add task
-  const addBtn = document.querySelector('[data-add]');
-  if (addBtn) {
-    const submit = () => {
-      const type = document.getElementById('new-type').value;
-      const who  = document.getElementById('new-who').value;
-      const text = document.getElementById('new-text').value.trim();
-      if (!text) return;
-      const proj = DATA.projects[DATA.proj];
-      proj.versions[0].stages[DATA.activeStage].tasks.push({ id: NID++, type, who, text, done: false });
-      proj.activity.unshift({ who: DATA.me, text: `criou: ${text.slice(0,42)}…`, time: 'Agora' });
-      render();
-      setTimeout(() => { const el = document.getElementById('new-text'); if(el) el.focus(); }, 50);
-    };
-    addBtn.addEventListener('click', submit);
-    const nt = document.getElementById('new-text');
-    if (nt) nt.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-  }
-
-  // New version toggle
-  document.getElementById('btn-nv').addEventListener('click', () => {
-    DATA.nvOpen = !DATA.nvOpen;
-    render();
-  });
-
-  const nvcancel = document.querySelector('[data-nvcancel]');
-  if (nvcancel) nvcancel.addEventListener('click', () => { DATA.nvOpen = false; render(); });
-
-  const nvsave = document.querySelector('[data-nvsave]');
-  if (nvsave) nvsave.addEventListener('click', () => {
-    const ver    = document.getElementById('u-ver').value.trim();
-    const author = document.getElementById('u-author').value;
-    const notes  = document.getElementById('u-notes').value.trim();
-    if (!ver || !author) return;
-    const proj = DATA.projects[DATA.proj];
-    proj.history.unshift(JSON.parse(JSON.stringify(proj.versions[0])));
-    proj.versions[0] = { ver, date: today(), author, notes: notes || '—', stages: mkStages() };
-    proj.activity.unshift({ who: author, text: `publicou versão ${ver}`, time: 'Agora' });
-    DATA.nvOpen = false;
-    DATA.activeStage = 'dados';
-    DATA.histOpen = {};
-    render();
-  });
-
-  // History toggle
-  document.querySelectorAll('[data-ht]').forEach(el => el.addEventListener('click', () => {
-    const i = parseInt(el.dataset.ht);
-    DATA.histOpen[i] = !DATA.histOpen[i];
-    render();
   }));
 }
 
-/* ═══════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════ */
-render();
+function fmtDate(s) {
+  if(!s) return '';
+  const [y,m,d]=s.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* ── FILTERS ── */
+document.getElementById('tp-filters').addEventListener('click', e => {
+  const fp = e.target.closest('.fp'); if(!fp) return;
+  ST.filter = fp.dataset.f;
+  document.querySelectorAll('.fp').forEach(f=>f.classList.toggle('on',f.dataset.f===ST.filter));
+  renderList();
+});
+
+/* ── NEW VERSION ── */
+document.getElementById('btn-nv').addEventListener('click', () => {
+  const ver = prompt('Número da nova versão (ex: v2.2):');
+  if(!ver||!ver.trim()) return;
+  const aut = prompt('Quem está publicando?')||ST.me;
+  const d = new Date();
+  const dt = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  ST.vers[ST.proj] = {v:ver.trim(),d:dt,a:aut};
+  ST.anns[ST.proj] = ST.anns[ST.proj].filter(a=>!a.done);
+  ST.pdf=null; ST.loaded=false; ST.pg=1;
+  showDZ(); buildSB(); renderList();
+});
+
+/* ── INIT ── */
+buildSB();
+renderList();
+showDZ();
 </script>
 </body>
 </html>
