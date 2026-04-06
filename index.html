@@ -1,81 +1,47 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEC Tracker Pro — SEGAPE</title>
+    <title>DEBUG SEGAPE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --pri: #003087; --bg: #f4f2ec; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--pri); color: white; margin-top: 10px; }
-        #app-content { display: none; text-align: center; background: white; padding: 2rem; border-radius: 12px; }
-    </style>
 </head>
-<body>
-
-    <div id="auth-section">
-        <div class="auth-card">
-            <h2 style="color:var(--pri)">SEGAPE Login</h2>
-            <input type="email" id="email" placeholder="E-mail institucional">
-            <input type="password" id="password" placeholder="Senha">
-            <button onclick="handleLogin()">Entrar no Sistema</button>
-            <p style="font-size: 12px; color: #666; margin-top: 15px;">Aguarde 2 segundos após clicar.</p>
-        </div>
-    </div>
-
-    <div id="app-content">
-        <h1 style="color:var(--pri)">Sucesso!</h1>
-        <p id="user-display"></p>
-        <p>Você está dentro do MEC Tracker Pro.</p>
-        <button onclick="logout()" style="background: #dc3545;">Sair</button>
+<body style="font-family:sans-serif; text-align:center; background:#f4f4f4; padding:50px;">
+    <div style="background:white; padding:30px; display:inline-block; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1)">
+        <h2>MEC Tracker - Teste de Resgate</h2>
+        <input type="email" id="email" placeholder="E-mail" style="display:block; width:250px; margin:10px auto; padding:10px">
+        <input type="password" id="password" placeholder="Senha" style="display:block; width:250px; margin:10px auto; padding:10px">
+        <button onclick="tentarLogar()" style="padding:10px 30px; background:#003087; color:white; border:none; cursor:pointer; font-weight:bold">ENTRAR AGORA</button>
+        <div id="log" style="margin-top:20px; font-size:12px; color:red; white-space:pre-wrap"></div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO REAL DO SEU PROJETO
-        const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
+        const S_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // Verifica se já está logado ao abrir
-        window.onload = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) showApp(session.user.email);
-        };
-
-        async function handleLogin() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            if (!email || !password) {
-                alert("Por favor, preencha todos os campos.");
-                return;
-            }
-
-            console.log("Tentando login...");
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-            if (error) {
-                alert("Erro no Login: " + error.message);
-                console.error(error);
-            } else {
-                alert("Login realizado com sucesso!");
-                showApp(data.user.email);
-            }
+        function escreverLog(msg) {
+            document.getElementById('log').innerText += "\n" + msg;
         }
 
-        function showApp(email) {
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
-            document.getElementById('user-display').innerText = "Usuário: " + email;
-        }
+        async function tentarLogar() {
+            escreverLog("Iniciando tentativa...");
+            try {
+                const supabase = window.supabase.createClient(S_URL, S_KEY);
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
 
-        async function logout() {
-            await supabase.auth.signOut();
-            location.reload();
+                escreverLog("Conectando ao Supabase para o email: " + email);
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    escreverLog("ERRO DE LOGIN: " + error.message);
+                } else {
+                    escreverLog("SUCESSO! Redirecionando...");
+                    alert("LOGADO COM SUCESSO!");
+                    // Aqui reiniciaremos a interface robusta após confirmar este passo
+                }
+            } catch (err) {
+                escreverLog("ERRO CRÍTICO DE SCRIPT: " + err.message);
+            }
         }
     </script>
 </body>
