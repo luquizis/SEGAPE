@@ -2,65 +2,161 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>MEC Tracker Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEC Tracker 2.0 — SEGAPE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f2ec; padding: 20px; text-align: center; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #003087; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #app { display: none; max-width: 600px; margin: auto; text-align: left; }
+        :root { --bg: #f5f7f9; --sidebar: #ffffff; --border: #e1e4e8; --pri: #003087; --acc: #009c3b; }
+        body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; display: grid; grid-template-columns: 220px 1fr 320px; height: 100vh; background: var(--bg); overflow: hidden; }
+        
+        /* Sidebar Esquerda */
+        .sidebar { background: var(--sidebar); border-right: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; overflow-y: auto; }
+        .section-title { font-weight: 700; color: #999; text-transform: uppercase; margin: 20px 0 10px; font-size: 11px; letter-spacing: 0.5px; }
+        .nav-item { padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: 0.2s; font-size: 13px; color: #444; }
+        .nav-item:hover { background: #f0f4f8; }
+        .nav-item.active { background: #e6eefc; color: var(--pri); font-weight: 600; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        /* Área Central (Documento/PDF) */
+        .main-content { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .top-bar { width: 100%; max-width: 850px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .pdf-page { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 100%; max-width: 850px; min-height: 1100px; border-radius: 8px; padding: 40px; box-sizing: border-box; position: relative; }
+
+        /* Painel de Tarefas (Direita) */
+        .task-panel { background: white; border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+        .task-card { border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 6px solid #ccc; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f0f0f0; border-left-width: 6px; }
+        .task-text { font-size: 13px; font-weight: 500; color: #333; line-height: 1.4; }
+        .task-footer { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #888; }
+        .tag { background: #f1f3f5; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+
+        /* Estilo das Diretrizes e Indicadores no documento */
+        .doc-section { border-top: 1px solid #eee; margin-top: 20px; padding-top: 10px; text-align: left; }
+        .dir-item { font-size: 12px; display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+
+        button { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .btn-dark { background: #1a1a1a; color: white; border: none; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" class="card">
-        <h2>SEGAPE Login</h2>
-        <input type="email" id="email" placeholder="E-mail">
-        <input type="password" id="password" placeholder="Senha">
-        <button onclick="fazerLogin()">Entrar</button>
-        <div id="msg" style="margin-top:10px; color:red; font-size:12px"></div>
+    <div class="sidebar">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <div style="background:var(--pri); width:24px; height:24px; border-radius:4px;"></div>
+            <strong style="font-size:15px;">MEC Tracker <small style="color:#999; font-weight:400">2.0</small></strong>
+        </div>
+        
+        <div class="section-title">Projetos</div>
+        <div id="project-list"></div>
+
+        <div class="section-title">Eu sou</div>
+        <div id="team-list">
+            <div class="nav-item"><div class="dot" style="background:#e0b3ff"></div> Marina <small style="margin-left:auto; color:#bbb">Design</small></div>
+            <div class="nav-item"><div class="dot" style="background:#b3d9ff"></div> Rodrigo <small style="margin-left:auto; color:#bbb">Design</small></div>
+            <div class="nav-item"><div class="dot" style="background:#b3ffcc"></div> André <small style="margin-left:auto; color:#bbb">Front</small></div>
+            <div class="nav-item"><div class="dot" style="background:#ffe6b3"></div> Eduardo <small style="margin-left:auto; color:#bbb">Backend</small></div>
+            <div class="nav-item active"><div class="dot" style="background:#ddd"></div> Luiz <small style="margin-left:auto; color:#bbb">Supervisão</small></div>
+        </div>
     </div>
 
-    <div id="app">
-        <h1>MEC Tracker Pro</h1>
-        <p>Logado com sucesso!</p>
-        <button onclick="supabase.auth.signOut().then(() => location.reload())" style="background:#dc3545; width:auto">Sair</button>
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="display:flex; align-items:center; gap:10px">
+                <div class="dot" style="background:var(--acc); width:10px; height:10px"></div>
+                <strong id="active-proj-title">ATM — Aqui Tem MEC</strong>
+                <span style="font-size: 11px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666;">v2.1 • 01/04/2026</span>
+            </div>
+            <div style="display:flex; gap:8px">
+                <button class="btn-dark" onclick="gerarRelatorioPDF()">Exportar PDF</button>
+                <button>Nova versão</button>
+            </div>
+        </div>
+
+        <div class="pdf-page" id="documento-area">
+            <h2 style="color:var(--pri); border-bottom: 2px solid var(--pri); padding-bottom: 10px;">Relatório de Desempenho IDEB</h2>
+            <p style="font-size: 14px; color: #666;">Secretaria de Educação — MEC</p>
+            
+            <div style="height: 200px; background: #f9f9f9; border: 1px dashed #ccc; margin: 30px 0; display: flex; align-items: center; justify-content: center; color: #999;">
+                [Área Visual de Gráficos e Tabelas]
+            </div>
+
+            <div class="doc-section">
+                <h4 style="margin:0 0 10px 0">Checklist de Diretrizes (SEGAPE)</h4>
+                <div id="dir-area"></div>
+            </div>
+
+            <div class="doc-section">
+                <h4 style="margin:0 0 10px 0">Indicadores Associados (Data Lake)</h4>
+                <div id="ind-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="task-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <strong style="font-size:14px">Tarefas</strong>
+            <span id="task-count" style="font-size:11px; background:#f0f0f0; padding:3px 8px; border-radius:10px; font-weight:bold">0 ABERTAS</span>
+        </div>
+        <div id="task-list"></div>
     </div>
 
     <script>
-        // Use os dados do seu projeto NOVO do Supabase:
-        const URL_S = 'https://zvfwjuooztjeuokesfek.supabase.co';
-        const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
+        // CHAVE ÚNICA PARA EVITAR DUPLICATA NO MAC
+        const sURL = 'https://zvfwjuooztjeuokesfek.supabase.co';
+        const sKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
+        const supabaseClient = window.supabase.createClient(sURL, sKEY);
 
-        // AQUI ESTÁ A ÚNICA DECLARAÇÃO DO SUPABASE (O segredo para não dar erro)
-        const supabase = window.supabase.createClient(URL_S, KEY_S);
-
-        async function fazerLogin() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const msg = document.getElementById('msg');
-
-            msg.innerText = "Verificando...";
+        async function bootstrap() {
+            await carregarProjetos();
+            await carregarTarefas();
+            // Diretrizes SEGAPE estáticas para demonstração rápida
+            const diretrizes = ["Org. de seções [Dir. 1]", "Transparência de fontes [Dir. 2]", "Contexto de gráficos [Dir. 3]", "Linguagem acessível [Dir. 4]", "Alinhamento PNE [Dir. 5]"];
+            document.getElementById('dir-area').innerHTML = diretrizes.map(d => `<div class="dir-item"><input type="checkbox"> ${d}</div>`).join('');
             
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            document.getElementById('ind-area').innerHTML = `
+                <div style="font-size:11px; color:#666; background:#fff8e6; padding:8px; border-left:3px solid #ffcc00">
+                    <strong>Query Lake:</strong> select * from mec_datalake.ideb_2025 where regiao = 'Sul'
+                </div>`;
+        }
 
-            if (error) {
-                msg.innerText = "Erro: " + error.message;
-            } else {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
+        async function carregarProjetos() {
+            const { data } = await supabaseClient.from('projects').select('*');
+            if(data) {
+                document.getElementById('project-list').innerHTML = data.map(p => `
+                    <div class="nav-item ${p.name.includes('ATM') ? 'active' : ''}">
+                        <div class="dot" style="background:var(--acc)"></div> ${p.name}
+                    </div>`).join('');
             }
         }
 
-        // Verifica se já está logado ao abrir a página
-        window.onload = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            }
-        };
+        async function carregarTarefas() {
+            // Dados simulados baseados na imagem real enviada pelo usuário
+            const tarefas = [
+                { id: 1, user: 'Eduardo', text: 'Verificar com Lucio e Leonardo a atualização desse dado', color: '#ffe6b3', page: 7, role: 'Backend' },
+                { id: 2, user: 'Eduardo', text: 'Verificar se tem atualização de 2025.', color: '#ffe6b3', page: 9, role: 'Backend' },
+                { id: 3, user: 'André', text: 'Textos seguir a lógica do documento.', color: '#b3ffcc', page: 12, role: 'Design' }
+            ];
+            
+            document.getElementById('task-count').innerText = tarefas.length + " ABERTAS";
+            document.getElementById('task-list').innerHTML = tarefas.map(t => `
+                <div class="task-card" style="border-left-color: ${t.color}">
+                    <div class="task-text">#${t.id} ${t.text}</div>
+                    <div class="task-footer">
+                        <span>${t.user} • p.${t.page}</span>
+                        <span class="tag">${t.role}</span>
+                    </div>
+                </div>`).join('');
+        }
+
+        function gerarRelatorioPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("MEC Tracker - Relatório de Revisão", 10, 10);
+            doc.text("Projeto: ATM Aqui Tem MEC", 10, 20);
+            doc.save("revisao-segape.pdf");
+        }
+
+        window.onload = bootstrap;
     </script>
 </body>
 </html>
