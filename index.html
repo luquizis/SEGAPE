@@ -2,17 +2,16 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEC Tracker Pro — SEGAPE</title>
+    <title>MEC Tracker Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --pri: #003087; --bg: #f4f2ec; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; margin: 20px auto; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 350px; margin: 50px auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--pri); color: white; }
         #app-content { display: none; max-width: 800px; margin: auto; }
-        .proj-item { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 5px solid var(--pri); cursor: pointer; }
+        .proj-card { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 6px solid var(--pri); text-align: left; }
     </style>
 </head>
 <body>
@@ -21,7 +20,7 @@
         <h2 style="color:var(--pri)">SEGAPE Login</h2>
         <input type="email" id="email" placeholder="E-mail institucional">
         <input type="password" id="password" placeholder="Senha">
-        <button onclick="handleLogin()">Entrar no Sistema</button>
+        <button onclick="handleLogin()">Entrar</button>
     </div>
 
     <div id="app-content">
@@ -30,13 +29,13 @@
             <button onclick="logout()" style="width:auto; background:#dc3545;">Sair</button>
         </div>
 
-        <div class="card" style="max-width: 100%; text-align: left;">
-            <h3>Novo Projeto</h3>
+        <div class="card" style="max-width: 100%; text-align: left; margin: 20px 0;">
+            <h3>Cadastrar Novo Projeto</h3>
             <input type="text" id="proj-name" placeholder="Nome da Publicação">
-            <button onclick="createProject()">Cadastrar Projeto</button>
+            <button onclick="createProject()">Salvar Projeto</button>
         </div>
 
-        <h3>Projetos Ativos</h3>
+        <h2 style="text-align: left;">Projetos Ativos</h2>
         <div id="project-list"></div>
     </div>
 
@@ -64,22 +63,22 @@
 
         async function loadProjects() {
             const { data, error } = await supabase.from('projects').select('*').order('created_at', {ascending: false});
-            if (error) { console.error(error); return; }
-            document.getElementById('project-list').innerHTML = data.map(p => `
-                <div class="proj-item">
-                    <strong>${p.name}</strong><br><small>Criado em: ${new Date(p.created_at).toLocaleDateString()}</small>
-                </div>
-            `).join('') || '<p>Nenhum projeto encontrado.</p>';
+            const list = document.getElementById('project-list');
+            if (data && data.length > 0) {
+                list.innerHTML = data.map(p => `<div class="proj-card"><strong>${p.name}</strong></div>`).join('');
+            } else {
+                list.innerHTML = '<p>Nenhum projeto cadastrado.</p>';
+            }
         }
 
         async function createProject() {
             const name = document.getElementById('proj-name').value;
-            if (!name) return alert("Digite o nome!");
+            if (!name) return alert("Digite o nome do projeto");
             const { error } = await supabase.from('projects').insert([{ name: name }]);
-            if (error) alert("Erro: " + error.message);
-            else { 
+            if (error) alert("Erro ao salvar: " + error.message);
+            else {
                 document.getElementById('proj-name').value = '';
-                loadProjects(); 
+                loadProjects();
             }
         }
 
