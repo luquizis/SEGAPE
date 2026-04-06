@@ -1,52 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>MEC Tracker Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f2ec; padding: 20px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #003087; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #app { display: none; max-width: 600px; margin: auto; text-align: left; }
+    </style>
 </head>
-<body style="font-family:sans-serif; text-align:center; padding-top:50px; background:#f4f2ec;">
-    <div style="background:white; padding:30px; display:inline-block; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1)">
+<body>
+
+    <div id="login-screen" class="card">
         <h2>SEGAPE Login</h2>
-        <input type="email" id="email" placeholder="E-mail" style="display:block; margin:10px auto; padding:10px; width:250px">
-        <input type="password" id="password" placeholder="Senha" style="display:block; margin:10px auto; padding:10px; width:250px">
-        <button onclick="login()" style="padding:10px 30px; background:#003087; color:white; border:none; cursor:pointer; font-weight:bold">ENTRAR NO SISTEMA</button>
-        <div id="msg" style="margin-top:20px; color:red; font-size:14px"></div>
+        <input type="email" id="email" placeholder="E-mail">
+        <input type="password" id="password" placeholder="Senha">
+        <button onclick="fazerLogin()">Entrar</button>
+        <div id="msg" style="margin-top:10px; color:red; font-size:12px"></div>
+    </div>
+
+    <div id="app">
+        <h1>MEC Tracker Pro</h1>
+        <p>Logado com sucesso!</p>
+        <button onclick="supabase.auth.signOut().then(() => location.reload())" style="background:#dc3545; width:auto">Sair</button>
     </div>
 
     <script>
-        // Use os dados do seu NOVO projeto aqui:
-        const URL_S = 'https://zvfwjuooztjeuokesfek.supabase.co'; 
+        // Use os dados do seu projeto NOVO do Supabase:
+        const URL_S = 'https://zvfwjuooztjeuokesfek.supabase.co';
         const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
 
-        // CONFIRMAÇÃO DE CARREGAMENTO
-        window.onload = () => { console.log("Script carregado com sucesso!"); };
-
+        // AQUI ESTÁ A ÚNICA DECLARAÇÃO DO SUPABASE (O segredo para não dar erro)
         const supabase = window.supabase.createClient(URL_S, KEY_S);
 
-        async function login() {
+        async function fazerLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const msgDiv = document.getElementById('msg');
+            const msg = document.getElementById('msg');
 
-            msgDiv.innerText = "Processando...";
-            msgDiv.style.color = "blue";
+            msg.innerText = "Verificando...";
+            
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                
-                if (error) {
-                    msgDiv.innerText = "Erro: " + error.message;
-                    msgDiv.style.color = "red";
-                } else {
-                    msgDiv.innerText = "LOGADO! Redirecionando...";
-                    msgDiv.style.color = "green";
-                    alert("Sucesso! Bem-vindo, " + data.user.email);
-                }
-            } catch (err) {
-                msgDiv.innerText = "Erro de conexão: " + err.message;
+            if (error) {
+                msg.innerText = "Erro: " + error.message;
+            } else {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
             }
         }
+
+        // Verifica se já está logado ao abrir a página
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            }
+        };
     </script>
 </body>
 </html>
