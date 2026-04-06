@@ -1,210 +1,50 @@
+// Configuração Inicial
+const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co';
+const SUPABASE_KEY = 'SUA_CHAVE_ANON_PUBLICA';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MEC Tracker Pro v2.1 - Completo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
-:root{--font:'Sora',sans-serif;--mono:'DM Mono',monospace;--bg:#f5f3ee;--surface:#fff;--border:#e2ded6;--border2:#c8c3bc;--text:#1a1714;--text2:#6b6560;--text3:#9e9890;--pri:#1d9e75;--blue:#2b7fdd;--red:#d83a3a;--yellow:#c07a10;--live:#1d9e75;--shadow:0 12px 36px rgba(0,0,0,.08)}*,*::before,*::after{box-sizing:border-box}body{font-family:var(--font);background:var(--bg);color:var(--text);margin:0;height:100vh;overflow:hidden}#login,#app{display:none}#login.active,#app.active{display:flex}.login-wrap{margin:auto;width:min(430px,92vw);background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--shadow)}.login-title{font-size:24px;font-weight:700;margin-bottom:6px}.login-sub{font-size:13px;color:var(--text2);margin-bottom:18px}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.field label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}.field input,.field select,.field textarea{border:1px solid var(--border2);border-radius:10px;padding:11px 12px;background:#fff;color:var(--text);font-family:var(--font);font-size:13px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{display:inline-flex;align-items:center;gap:4px;padding:9px 12px;border-radius:10px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text);transition:all .15s}.btn:hover{background:var(--bg)}.btn.pri{background:var(--text);color:#fff;border-color:var(--text)}.btn.green{background:var(--pri);color:#fff;border-color:var(--pri)}.btn.live{background:var(--live);color:#fff}.msg{min-height:18px;color:var(--text2);font-size:12px;margin-top:8px}.live-dot::after{content:'';width:8px;height:8px;background:var(--live);border-radius:50%;margin-left:4px;animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.shell{display:flex;height:100vh;overflow:hidden}aside{width:280px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}main{flex:1;display:flex;flex-direction:column;min-width:0}.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px}.brand{font-weight:700;font-size:16px}.status-live{color:var(--live);font-weight:600}.spacer{flex:1}.content{display:grid;grid-template-columns:380px 1fr 380px;gap:1px;height:calc(100vh - 56px);min-height:0}.panel{background:var(--surface);overflow:auto;border-right:1px solid var(--border)}.panel:last-child{border-right:none}.sec{padding:20px;border-bottom:1px solid var(--border)}.sec-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sec h3{margin:0;font-size:15px;font-weight:600}.list{padding:0 12px 20px;overflow-y:auto;max-height:calc(100vh - 200px)}.item{padding:14px;border:1px solid var(--border2);border-radius:12px;margin-bottom:10px;background:#fff;transition:all .15s;cursor:pointer}.item:hover{box-shadow:var(--shadow)}.stack{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.tag{padding:3px 8px;border-radius:6px;background:#eef4ff;color:#245;font-size:11px;font-weight:500}.kpi{font-family:var(--mono);font-size:12px;background:#f2f0eb;border:1px solid var(--border);padding:4px 8px;border-radius:6px}.monitoring-panel{padding:16px;border:1px solid var(--border2);border-radius:12px;background:#fff;margin:12px 0}.status-grid{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:12px}.kpi-card{padding:16px;border:1px solid var(--border2);border-radius:12px}.kpi-title{font-size:13px;color:var(--text2);margin-bottom:4px}.kpi-value{font-size:24px;font-weight:700;color:var(--text);margin-bottom:4px}.alert{padding:10px;border-radius:8px;margin-bottom:8px}.alert.danger{background:#fee2e2;border:1px solid #f87171;color:#991b1b}.pdfwrap{height:100%;overflow:auto;background:#f8f7f5;padding:24px;display:flex;flex-direction:column;gap:16px;align-items:center}.page{position:relative;display:inline-block;box-shadow:0 8px 32px rgba(0,0,0,.15);border-radius:8px;margin:12px}.page canvas{display:block;border-radius:8px}.pin{position:absolute;width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg) translate(-50%,-100%);background:var(--pri);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;z-index:10}.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}.modal{width:100%;max-width:800px;max-height:90vh;background:var(--surface);border-radius:16px;overflow:auto;box-shadow:var(--shadow);padding:24px}.grid2{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:repeat(3,1fr)}.tabs{display:flex;gap:2px;padding:12px;border-bottom:1px solid var(--border);overflow-x:auto}.tab{padding:8px 16px;border:1px solid var(--border2);border-radius:8px 8px 0 0;background:#f8f7f5;font-size:12px;white-space:nowrap;cursor:pointer;transition:all .15s}.tab.on{background:var(--pri);color:#fff;border-color:var(--pri)}.presence{display:flex;align-items:center;gap:6px;font-size:11px;margin-top:4px}.user-avatar{width:22px;height:22px;border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;background:var(--pri);color:#fff}.tiny{font-size:11px;color:var(--text2)}.hr{height:1px;background:var(--border);margin:16px 0}textarea{min-height:80px;resize:vertical}@media(max-width:1200px){.content{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-<div id="login" class="active">
-  <div class="login-wrap">
-    <h1 class="login-title">MEC Tracker Pro v2.1</h1>
-    <div class="login-sub">SEGAPE - Monitoramento e Checklist Colaborativo</div>
-    <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="usuario@segape.gov.br"></div>
-    <div class="field"><label>Senha</label><input id="password" type="password"></div>
-    <div class="row"><button class="btn pri" id="btnLogin">Entrar</button><button class="btn" id="btnSignup">Cadastrar</button></div>
-    <div class="msg" id="authMsg"></div>
-  </div>
-</div>
-
-<div id="app">
-  <div class="shell">
-    <aside>
-      <div class="sec">
-        <div class="sec-title">
-          <h3>📋 Projetos SEGAPE</h3>
-          <button class="btn green" id="newProjectBtn">+ Novo</button>
-        </div>
-        <div class="list" id="projectList"></div>
-      </div>
-      <div class="sec">
-        <div class="sec-title">
-          <span>👥 Time online <span class="live-dot"></span></span>
-          <div class="presence" id="presenceList"></div>
-        </div>
-      </div>
-    </aside>
-
-    <main>
-      <div class="topbar">
-        <div class="brand">MEC Tracker Pro <span class="live-dot"></span></div>
-        <div class="spacer"></div>
-        <span class="status-live" id="realtimeStatus">Conectado</span>
-        <button class="btn pri" id="reportBtn">📄 Relatório PDF</button>
-        <button class="btn" id="logoutBtn">Sair</button>
-      </div>
-
-      <div class="content">
-        <!-- ESQUERDA: Cadastro/Checklist/Monitor -->
-        <div class="panel">
-          <div class="tabs" id="leftTabs">
-            <div class="tab on" data-tab="projeto">Projeto</div>
-            <div class="tab" data-tab="checklist">Checklist SEGAPE</div>
-            <div class="tab" data-tab="monitor">Monitor Dados</div>
-          </div>
-          <div class="list" id="leftContent"></div>
-        </div>
-
-        <!-- MEIO: PDF -->
-        <div class="panel">
-          <div class="tabs"><div class="tab on">📄 Documento Atual</div></div>
-          <div class="pdfwrap" id="pdfContainer">
-            <div style="text-align:center;padding:40px">
-              <div style="font-size:48px;margin-bottom:16px">📄</div>
-              <div style="font-weight:600;margin-bottom:8px">Carregue a publicação</div>
-              <div style="color:var(--text2);margin-bottom:24px">Clique para criar tarefas e observações</div>
-              <input type="file" id="pdfUpload" accept="application/pdf" style="display:none">
-              <button class="btn pri" onclick="document.getElementById('pdfUpload').click()">⬆ Upload PDF</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- DIREITA: Atividades -->
-        <div class="panel">
-          <div class="tabs"><div class="tab on">🎯 Atividades ({0})</div></div>
-          <div class="list" id="activitiesList">
-            <div class="item" style="text-align:center;padding:40px;color:var(--text2)">
-              Selecione um projeto para ver tarefas e comentários
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-</div>
-
-<div class="modal-back" id="modalBack">
-  <div class="modal" id="modalContent"></div>
-</div>
-
-<script>
-const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
-const SUPABASE_ANON_KEY = 'SUA_CHAVE_PUBLICA_AQUI';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Checklists SEGAPE oficiais
-const SEGAPE_CHECKLISTS = {
-  gerencia: ['Organização clara de seções (contextualização, fontes, indicadores, resultados)', 'Coerência com PNE 2024-2034 e marcos normativos', 'Escopo aprovado e alinhado com demanda', 'Stakeholders confirmados e alinhados', 'Prazos e marcos respeitados'],
-  design: ['Padronização estrutural das seções', 'Identidade visual consistente (cores, tipografia, componentes)', 'Gráficos, tabelas e mapas com boa legibilidade', 'Hierarquia visual clara e acessível', 'Exportação final em alta qualidade'],
-  front: ['Linguagem institucional objetiva e acessível', 'Evitar terminologia técnica excessiva', 'Fluxo de leitura intuitivo', 'Responsividade e adaptação para diferentes formatos', 'Estados de erro e vazio bem tratados'],
-  consultas: ['Explicitar fontes de informação (INEP, Censo, etc.)', 'Período de referência correto', 'Queries validadas e testadas', 'Indicadores contextualizados com significado e limitações', 'Consistência com data lake atualizado'],
-  graficos: ['Indicadores com título, legenda e escala clara', 'Fontes dos dados explicitadas', 'Acessibilidade visual (cores, contraste)', 'Atualização verificada no data lake', 'Leitura facilitada (não sobrecarregar página)']
-};
-
-let currentUser = null, currentProject = null, realtimeChannels = [], dataAlerts = [];
-let projects = [], tasks = [], notes = [], indicators = [], checklists = [];
-
-async function initApp() {
-  const { data: { session } } = await supabase.auth.getSession();
-  currentUser = session?.user;
-  toggleApp();
-  if (currentUser) {
-    await loadAllData();
-    setupRealtime();
-  }
-}
-
-function toggleApp() {
-  document.getElementById('login').classList.toggle('active', !currentUser);
-  document.getElementById('app').classList.toggle('active', !!currentUser);
-}
-
-document.getElementById('btnLogin').onclick = async () => {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) document.getElementById('authMsg').textContent = error.message;
-};
-
-document.getElementById('logoutBtn').onclick = async () => {
-  await supabase.auth.signOut();
-  currentUser = null;
-  toggleApp();
-};
-
-async function loadAllData() {
-  const [p, t, n, i, c] = await Promise.all([
-    supabase.from('projects').select('*'),
-    supabase.from('tasks').select('*'),
-    supabase.from('notes').select('*'),
-    supabase.from('project_indicators').select('*'),
-    supabase.from('project_checklists').select('*')
-  ]);
-  projects = p.data || [];
-  tasks = t.data || [];
-  notes = n.data || [];
-  indicators = i.data || [];
-  checklists = c.data || [];
-  renderProjects();
-}
-
-function renderProjects() {
-  document.getElementById('projectList').innerHTML = projects.map(p => `
-    <div class="item" onclick="selectProject('${p.id}')">
-      <div><strong>${p.name}</strong> <span class="kpi">${p.year || '?'}</span></div>
-      <div class="stack">
-        <span class="tag">${p.status}</span>
-        <span class="tag">${p.requester || 'Sem demandante'}</span>
-      </div>
-      <div class="presence">
-        ${Object.entries(p.managers || {}).map(([k,v]) => v ? `<span class="user-avatar">${v.slice(0,2)}</span>` : '').join('')}
-      </div>
-    </div>
-  `).join('') || '<div style="text-align:center;padding:40px;color:var(--text2)">Nenhum projeto. Crie o primeiro!</div>';
-}
-
-// Monitoramento de dados
-async function checkDataUpdates() {
-  if (!currentProject) return;
-  const projIndicators = indicators.filter(i => i.project_id === currentProject.id);
-  let updated = 0;
-  dataAlerts = [];
-
-  for (const ind of projIndicators) {
-    // Simulação - substitua por API real do data lake
-    const isUpdated = Math.random() > 0.15; 
-    if (!isUpdated) {
-      dataAlerts.push(ind);
+// 1. Gerenciamento de Sessão (Passo fundamental para segurança)
+async function checkUser() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+        loadProjects(); // Carrega os dados se estiver logado
     } else {
-      updated++;
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('app-content').style.display = 'none';
     }
-  }
-
-  document.getElementById('kpi-updated').textContent = `${updated}/${projIndicators.length}`;
-  document.getElementById('kpi-status').textContent = dataAlerts.length 
-    ? `⚠️ ${dataAlerts.length} alerta${dataAlerts.length > 1 ? 's' : ''}` 
-    : '✅ Todos atualizados';
-
-  document.getElementById('data-alerts').innerHTML = dataAlerts.map(a => `
-    <div class="alert danger">
-      <strong>${a.indicator}</strong> (p.${a.page})
-      <div class="tiny">${a.sheet || 'Data Lake'}</div>
-    </div>
-  `).join('') || '<div class="muted">Nenhum dado desatualizado</div>';
 }
 
-// Inicialização
-initApp();
-supabase.auth.onAuthStateChange(initApp);
-</script>
-</body>
-</html>
+// 2. Função de Login Estratégico
+async function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+        alert("Erro no login: " + error.message);
+    } else {
+        checkUser(); // Atualiza a interface
+    }
+}
+
+// 3. Inicialização de Checklists por Diretriz (Conforme solicitado)
+async function initProjectChecklist(projectId) {
+    const diretrizes = [
+        { area: 'gerencia', item: 'Organização clara de seções (Diretriz 1)' },
+        { area: 'consultas', item: 'Explicitação das fontes de informação (Diretriz 2)' },
+        { area: 'graficos', item: 'Indicadores contextualizados (Diretriz 3)' },
+        { area: 'front', item: 'Linguagem institucional acessível (Diretriz 4)' },
+        { area: 'gerencia', item: 'Coerência com marcos normativos/PNE (Diretriz 5)' }
+    ];
+
+    const inserts = diretrizes.map(d => ({
+        project_id: projectId,
+        area: d.area,
+        item_text: d.item
+    }));
+
+    await supabase.from('project_checklists').insert(inserts);
+}
