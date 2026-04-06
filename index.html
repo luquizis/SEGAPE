@@ -1,227 +1,962 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>MEC Tracker Pro | SEGAPE 2.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <style>
-        /* APROVEITANDO SEU CSS ORIGINAL */
-        :root {
-            --font:'Sora',sans-serif; --mono:'DM Mono',monospace;
-            --bg:#F5F3EE; --surface:#FFF; --border:#E2DEDA;
-            --pri:#003087; --text:#1A1714;
-            --design:#4A3F9F; --design-bg:#EEEDFB;
-            --front:#0D6B4F; --front-bg:#E1F5EE;
-            --back:#7A4A0A; --back-bg:#FDF0DC;
-            --textc:#14548A; --textc-bg:#E4F1FA;
-            --sup:#4A4845; --sup-bg:#F0EDE8;
-        }
-        body { font-family: var(--font); margin: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
-        
-        /* SIDEBAR */
-        #sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .sb-item { padding: 12px 15px; cursor: pointer; font-size: 13px; border-left: 3px solid transparent; }
-        .sb-item.active { background: var(--bg); border-left-color: var(--pri); font-weight: 600; }
-        .sb-sect { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; padding: 20px 15px 5px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEC Tracker V9 - SEGAPE</title>
 
-        /* VIEWPORTS */
-        .view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
-        .view.active { display: flex; }
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        /* INTERFACE DE REVISÃO (SUA ORIGINAL) */
-        #workspace { display: flex; flex: 1; overflow: hidden; }
-        #pdf-pane { flex: 1; background: #555; overflow: auto; display: flex; justify-content: center; padding: 20px; }
-        .page-wrap { position: relative; background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-        #tasks-pane { width: 340px; background: white; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        /* PINOS NO PDF */
-        .pin { position: absolute; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg) translate(-50%,-100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 10px; cursor: pointer; }
-        .pin span { transform: rotate(45deg); }
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #EFEDE8;
+    overflow: hidden;
+}
 
-        /* ABA CADASTRO */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; max-width: 900px; }
-        .card-form { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
-        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 6px; }
-        
-        /* ESTILO DOS CARDS DE TAREFA (SEU ORIGINAL) */
-        .tc { padding: 12px; margin: 10px; border-radius: 8px; border-left: 4px solid #ccc; font-size: 12px; position: relative; }
-        .tc-obs { border-left-style: dashed; opacity: 0.8; }
-    </style>
+/* Sidebar */
+#sidebar {
+    width: 280px;
+    background: #1A1917;
+    color: #fff;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+#sidebar h3 {
+    padding: 24px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 20px;
+}
+
+.nav div {
+    padding: 12px 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.nav div:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.1);
+    padding-left: 28px;
+}
+
+.nav div.active {
+    opacity: 1;
+    background: rgba(43,127,221,0.3);
+    border-left: 3px solid #2B7FDD;
+}
+
+/* Main Content */
+#main {
+    margin-left: 280px;
+    padding: 20px;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* Cards */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.project-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.project-badge {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.project-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #666;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Buttons */
+button {
+    background: #2B7FDD;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: #1a5fa3;
+    transform: translateY(-1px);
+}
+
+button.secondary {
+    background: #6c757d;
+}
+
+button.danger {
+    background: #dc3545;
+}
+
+/* Forms */
+input, select, textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+label {
+    font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    z-index: 1001;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    min-width: 400px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+/* PDF Viewer */
+#pdf-container {
+    height: 70vh;
+    overflow: auto;
+    background: #444;
+    border-radius: 8px;
+    position: relative;
+    margin-top: 20px;
+}
+
+.pdf-page {
+    position: relative;
+    margin: 20px auto;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    width: fit-content;
+}
+
+.pin {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: #FF4444;
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.pin:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    background: #FF0000;
+}
+
+.pin.resolved {
+    background: #00C851;
+}
+
+/* Task List */
+.task-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border-left: 3px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.task-item:hover {
+    background: #e9ecef;
+}
+
+.task-priority-high { border-left-color: #dc3545; }
+.task-priority-media { border-left-color: #ffc107; }
+.task-priority-baixa { border-left-color: #28a745; }
+
+/* Checklist */
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    margin: 8px 0;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.checklist-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #666;
+    font-weight: 500;
+}
+
+.tab.active {
+    color: #2B7FDD;
+    border-bottom: 2px solid #2B7FDD;
+    margin-bottom: -2px;
+}
+
+/* Grid */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 200px;
+    }
+    #main {
+        margin-left: 200px;
+    }
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div style="padding: 20px; font-weight: 800; color: var(--pri)">MEC TRACKER <small>2.0</small></div>
-    
-    <div class="sb-sect">Navegação</div>
-    <div class="sb-item active" onclick="switchView('view-revisao')">📄 Revisão PDF</div>
-    <div class="sb-item" onclick="switchView('view-cadastro')">⚙️ Cadastro Projeto</div>
-    <div class="sb-item" onclick="switchView('view-indicadores')">📊 Auditoria Lake</div>
-    
-    <div class="sb-sect">Pessoas</div>
-    <div id="membros-list" style="padding: 0 15px; font-size: 11px; color: #666"></div>
-</div>
-
-<div id="main" style="flex:1; display:flex; flex-direction:column;">
-    
-    <div style="height: 55px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; justify-content: space-between;">
-        <strong id="current-project">ATM — Aqui tem MEC</strong>
-        <div>
-            <input type="file" id="pdf-input" hidden accept="application/pdf">
-            <button onclick="document.getElementById('pdf-input').click()" style="padding: 8px 15px; cursor: pointer;">⬆ Subir PDF</button>
-            <button onclick="gerarPDF()" style="background: var(--pri); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Exportar Relatório</button>
-        </div>
-    </div>
-
-    <div id="view-revisao" class="view active">
-        <div id="workspace">
-            <div id="pdf-pane">
-                <div id="pdf-container" class="page-wrap">
-                    <canvas id="pdf-canvas"></canvas>
-                    <div id="pins-layer"></div>
-                </div>
-            </div>
-            <div id="tasks-pane">
-                <div style="padding: 15px; border-bottom: 1px solid var(--border); font-weight: 700;">Gestão Editorial</div>
-                <div id="task-list" style="overflow-y: auto; flex: 1;"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="view-cadastro" class="view">
-        <div class="form-grid">
-            <div class="card-form">
-                <h3>Dados da Publicação</h3>
-                <label>Nome</label><input type="text" id="p-nome" placeholder="Nome da publicação">
-                <label>Ano</label><input type="number" value="2026">
-                <label>Demandante</label><input type="text" placeholder="Ex: SECADI">
-            </div>
-            <div class="card-form">
-                <h3>Responsáveis</h3>
-                <label>Design</label><select><option>Marina</option><option>Rodrigo</option></select>
-                <label>Front</label><select><option>André</option></select>
-                <label>Supervisão</label><select><option>Luiz</option><option>Lucas</option></select>
-            </div>
-            <div class="card-form" style="grid-column: span 2;">
-                <h3>Checklist de Diretrizes (Governança)</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-                    <div><strong>Design</strong><br><label><input type="checkbox"> Padronização (Dir 1)</label></div>
-                    <div><strong>Front</strong><br><label><input type="checkbox"> Fontes/Período (Dir 2)</label></div>
-                    <div><strong>Supervisão</strong><br><label><input type="checkbox"> Coerência PNE (Dir 5)</label></div>
-                </div>
-            </div>
-        </div>
+    <h3>📊 MEC Tracker V9</h3>
+    <div class="nav">
+        <div onclick="changeView('dash')" id="nav-dash">📈 Dashboard</div>
+        <div onclick="changeView('projects')" id="nav-projects">📁 Projetos</div>
+        <div onclick="changeView('checklist')" id="nav-checklist">✅ Checklist</div>
+        <div onclick="changeView('datalake')" id="nav-datalake">💾 Data Lake</div>
+        <div onclick="changeView('team')" id="nav-team">👥 Equipe</div>
     </div>
 </div>
 
-<div id="modal-task" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:25px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:100; width:300px;">
-    <h4 style="margin:0">Novo Ponto de Revisão</h4>
-    <select id="task-type" style="margin: 10px 0;">
-        <option value="task">🔴 TAREFA (Exige correção)</option>
-        <option value="note">🟡 OBSERVAÇÃO (Estudo/Atenção)</option>
-    </select>
-    <textarea id="task-txt" rows="4" placeholder="Descreva o que precisa ser feito..."></textarea>
-    <div style="margin-top:15px; display:flex; gap:10px;">
-        <button onclick="closeModal()" style="flex:1">Cancelar</button>
-        <button onclick="saveToSupabase()" style="flex:1; background:var(--pri); color:white; border:none; border-radius:5px;">Salvar</button>
-    </div>
-</div>
+<div id="main"></div>
 
 <script>
-    // CONFIG SUPABASE (Sua chave)
-    const supabaseClient = window.supabase.createClient('https://zvfwjuooztjeuokesfek.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00');
+// ============================================
+// 🔐 CONFIGURAÇÃO DO SUPABASE - COLOQUE SUAS CREDENCIAIS AQUI
+// ============================================
+// LINHA 278: Coloque sua URL do Supabase
+// LINHA 279: Coloque sua chave anônima (anon public key)
+// ============================================
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const SUPABASE_URL = 'https://ujneiupcuqiqkkltgvkv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0';
 
-    let lastClickPos = { x: 0, y: 0 };
-    let currentProjId = 'atm';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // MUDAR ABAS
-    function switchView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        event.target.classList.add('active');
+// Configurar PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Estado global
+let currentView = 'dash';
+let currentProject = null;
+let currentVersion = null;
+let projects = [];
+let members = [];
+let tasks = [];
+let versions = [];
+let checklists = [];
+let indicators = [];
+let pdfDoc = null;
+
+// ============================================
+// FUNÇÕES DE CARREGAMENTO
+// ============================================
+
+async function loadProjects() {
+    const { data } = await supabase.from('projects').select('*').order('name');
+    projects = data || [];
+    
+    // Carregar pendências para cada projeto
+    const { data: pendencies } = await supabase.from('global_pendencies').select('*');
+    window.pendencies = pendencies || [];
+}
+
+async function loadMembers() {
+    const { data } = await supabase.from('members').select('*').order('name');
+    members = data || [];
+}
+
+async function loadVersions(projectId) {
+    const { data } = await supabase.from('project_versions')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+    versions = data || [];
+}
+
+async function loadTasks() {
+    if (!currentVersion) return;
+    const { data } = await supabase.from('tasks')
+        .select('*')
+        .eq('version_id', currentVersion)
+        .order('created_at', { ascending: false });
+    tasks = data || [];
+    renderPins();
+}
+
+async function loadChecklists(projectId) {
+    const { data } = await supabase.from('checklists')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('area', 'order_position');
+    checklists = data || [];
+}
+
+async function loadIndicators(projectId) {
+    const { data } = await supabase.from('project_indicators')
+        .select('*')
+        .eq('project_id', projectId);
+    indicators = data || [];
+}
+
+// ============================================
+// FUNÇÕES DE CRIAÇÃO
+// ============================================
+
+async function createProject() {
+    const name = prompt('Nome do projeto:');
+    if (!name) return;
+    const id = prompt('ID do projeto (ex: novo_projeto):');
+    if (!id) return;
+    const color = prompt('Cor do projeto (ex: #1D9E75):', '#1D9E75');
+    
+    await supabase.from('projects').insert([{
+        id: id.toLowerCase(),
+        name: name,
+        color: color,
+        created_at: new Date()
+    }]);
+    await loadProjects();
+    render();
+}
+
+async function createVersion() {
+    if (!currentProject) {
+        alert('Selecione um projeto primeiro');
+        return;
     }
+    
+    const versionTag = prompt('Tag da versão (ex: v1.0, 2024-03-20):');
+    if (!versionTag) return;
+    
+    const { data, error } = await supabase.from('project_versions').insert([{
+        project_id: currentProject,
+        version_tag: versionTag,
+        created_by: 'Usuário',
+        created_at: new Date()
+    }]).select();
+    
+    if (error) {
+        alert('Erro: ' + error.message);
+    } else {
+        await loadVersions(currentProject);
+        if (data && data[0]) {
+            currentVersion = data[0].id;
+        }
+        render();
+    }
+}
 
-    // UPLOAD E RENDER PDF
-    document.getElementById('pdf-input').onchange = async (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = async function() {
-            const typedarray = new Uint8Array(this.result);
-            const pdf = await pdfjsLib.getDocument(typedarray).promise;
-            const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 1.5 });
-            const canvas = document.getElementById('pdf-canvas');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        };
-        reader.readAsArrayBuffer(file);
-    };
+async function createTask(x, y, page) {
+    const taskText = prompt('Descrição da tarefa:');
+    if (!taskText) return;
+    
+    const area = prompt('Área (design/front/back/dados/sup/aprov):', 'design');
+    const responsible = prompt('Responsável:', '');
+    const priority = prompt('Prioridade (baixa/media/alta/urgente):', 'media');
+    const dueDate = prompt('Data limite (YYYY-MM-DD):', '');
+    
+    await supabase.from('tasks').insert([{
+        project_id: currentProject,
+        version_id: currentVersion,
+        task_text: taskText,
+        type: 'tarefa',
+        area: area,
+        responsible: responsible,
+        page: page,
+        x_pos: x,
+        y_pos: y,
+        due_date: dueDate || null,
+        priority: priority,
+        is_done: false,
+        created_by: 'Usuário',
+        created_at: new Date()
+    }]);
+    await loadTasks();
+    renderPins();
+}
 
-    // CLIQUE NO PDF
-    document.getElementById('pdf-container').onclick = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        lastClickPos.x = ((e.clientX - rect.left) / rect.width) * 100;
-        lastClickPos.y = ((e.clientY - rect.top) / rect.height) * 100;
-        document.getElementById('modal-task').style.display = 'block';
-    };
+async function toggleTask(taskId, currentStatus) {
+    await supabase.from('tasks')
+        .update({ 
+            is_done: !currentStatus, 
+            checked_at: new Date(),
+            checked_by: 'Usuário'
+        })
+        .eq('id', taskId);
+    await loadTasks();
+    renderPins();
+}
 
-    function closeModal() { document.getElementById('modal-task').style.display = 'none'; }
+async function toggleChecklist(itemId, currentStatus) {
+    await supabase.from('checklists')
+        .update({ 
+            is_checked: !currentStatus, 
+            checked_at: new Date(),
+            checked_by: 'Usuário'
+        })
+        .eq('id', itemId);
+    await loadChecklists(currentProject);
+    render();
+}
 
-    // SALVAR NO SUPABASE (Fase 2 - Persistência)
-    async function saveToSupabase() {
-        const txt = document.getElementById('task-txt').value;
-        const type = document.getElementById('task-type').value;
+async function uploadPDF(file) {
+    if (!currentVersion) {
+        alert('Crie uma versão primeiro!');
+        return;
+    }
+    
+    const fileName = `${currentProject}/${currentVersion}/${file.name}`;
+    const { error } = await supabase.storage
+        .from('pdfs')
+        .upload(fileName, file, { upsert: true });
+    
+    if (error) {
+        alert('Erro no upload: ' + error.message);
+        return;
+    }
+    
+    const { data: publicUrl } = supabase.storage
+        .from('pdfs')
+        .getPublicUrl(fileName);
+    
+    await supabase.from('project_versions')
+        .update({ pdf_url: publicUrl.publicUrl })
+        .eq('id', currentVersion);
+    
+    await loadPDF(publicUrl.publicUrl);
+}
+
+async function loadPDF(url) {
+    if (!url) return;
+    try {
+        const loadingTask = pdfjsLib.getDocument(url);
+        pdfDoc = await loadingTask.promise;
+        renderPDF();
+    } catch (error) {
+        console.error('Erro ao carregar PDF:', error);
+        document.getElementById('pdf-container').innerHTML = '<p style="color:white;padding:20px">Erro ao carregar PDF</p>';
+    }
+}
+
+// ============================================
+// RENDERIZAÇÃO
+// ============================================
+
+async function renderPDF() {
+    const container = document.getElementById('pdf-container');
+    if (!container || !pdfDoc) return;
+    
+    container.innerHTML = '';
+    
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
         
-        const { error } = await supabaseClient.from('tasks').insert([{
-            project_id: currentProjId,
-            task_text: txt,
-            type: type,
-            x_pos: lastClickPos.x,
-            y_pos: lastClickPos.y,
-            author: 'Luiz',
-            page: 1,
-            color: type === 'task' ? '#D83A3A' : '#F5C800'
-        }]);
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'pdf-page';
+        pageDiv.dataset.page = i;
+        pageDiv.style.position = 'relative';
+        pageDiv.style.width = viewport.width + 'px';
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.display = 'block';
+        
+        await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport: viewport
+        }).promise;
+        
+        pageDiv.appendChild(canvas);
+        
+        pageDiv.onclick = (e) => {
+            const rect = pageDiv.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                createTask(x, y, i);
+            }
+        };
+        
+        container.appendChild(pageDiv);
+    }
+    
+    renderPins();
+}
 
-        if (!error) {
-            closeModal();
-            loadTasks();
+function renderPins() {
+    document.querySelectorAll('.pin').forEach(p => p.remove());
+    
+    tasks.forEach(task => {
+        const pageDiv = document.querySelector(`.pdf-page[data-page='${task.page}']`);
+        if (!pageDiv) return;
+        
+        const pin = document.createElement('div');
+        pin.className = `pin ${task.is_done ? 'resolved' : ''}`;
+        pin.style.left = (task.x_pos * 100) + '%';
+        pin.style.top = (task.y_pos * 100) + '%';
+        
+        pin.onclick = (e) => {
+            e.stopPropagation();
+            const confirmMsg = `📋 ${task.task_text}\n\n👤 Responsável: ${task.responsible || 'N/A'}\n🎯 Prioridade: ${task.priority}\n📅 Data: ${task.due_date || 'Sem prazo'}\n✅ Status: ${task.is_done ? 'Concluída' : 'Pendente'}\n\nDeseja marcar como ${task.is_done ? 'pendente' : 'concluída'}?`;
+            if (confirm(confirmMsg)) {
+                toggleTask(task.id, task.is_done);
+            }
+        };
+        
+        pageDiv.appendChild(pin);
+    });
+}
+
+function scrollToTask(page, x, y) {
+    const pageDiv = document.querySelector(`.pdf-page[data-page='${page}']`);
+    if (pageDiv) {
+        pageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+            const pin = pageDiv.querySelector('.pin');
+            if (pin) {
+                pin.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                setTimeout(() => {
+                    pin.style.transform = 'translate(-50%, -50%) scale(1)';
+                }, 500);
+            }
+        }, 500);
+    }
+}
+
+// ============================================
+// VIEWS
+// ============================================
+
+function renderDashboard() {
+    const pendingData = window.pendencies || [];
+    
+    return `
+        <h1 style="margin-bottom: 24px;">📈 Dashboard SEGAPE</h1>
+        
+        <div class="grid-2">
+            ${projects.map(p => {
+                const stats = pendingData.find(pd => pd.project_id === p.id) || {};
+                return `
+                    <div class="card" onclick="selectProject('${p.id}')">
+                        <div class="project-card">
+                            <div>
+                                <span class="project-badge" style="background: ${p.color || '#ccc'}"></span>
+                                <strong style="font-size: 18px;">${p.name}</strong>
+                            </div>
+                            <div class="project-stats">
+                                <div class="stat">📋 ${stats.pending_tasks || 0} pendentes</div>
+                                <div class="stat">⚠️ ${stats.overdue_tasks || 0} atrasadas</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; font-size: 13px; color: #666;">
+                            Ano: ${p.ano || 'N/A'} | Previsão: ${p.previsao_lancamento || 'N/A'}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <h3>📊 Estatísticas Gerais</h3>
+            <div class="grid-2" style="margin-top: 16px;">
+                <div>
+                    <strong>Total de Projetos:</strong> ${projects.length}<br>
+                    <strong>Total de Tarefas Pendentes:</strong> ${pendingData.reduce((sum, p) => sum + (p.pending_tasks || 0), 0)}<br>
+                    <strong>Tarefas Atrasadas:</strong> ${pendingData.reduce((sum, p) => sum + (p.overdue_tasks || 0), 0)}
+                </div>
+                <div>
+                    <strong>Equipe Total:</strong> ${members.length}<br>
+                    <strong>Versões Criadas:</strong> ${versions.length}<br>
+                    <strong>Checklists Ativos:</strong> ${checklists.length}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderProjectView() {
+    const project = projects.find(p => p.id === currentProject);
+    
+    return `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <button onclick="changeView('dash')">← Voltar</button>
+                <h1 style="display: inline-block; margin-left: 16px;">📁 ${project?.name || currentProject}</h1>
+            </div>
+            <button onclick="createVersion()">➕ Nova Versão</button>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab ${!currentVersion ? 'active' : ''}" onclick="showVersionSelector()">📄 Versões</div>
+            ${currentVersion ? `<div class="tab active" onclick="showPDFViewer()">📖 Visualizador</div>` : ''}
+            ${currentVersion ? `<div class="tab" onclick="showTasksList()">📋 Tarefas (${tasks.filter(t => !t.is_done).length})</div>` : ''}
+        </div>
+        
+        ${!currentVersion ? `
+            <div class="card">
+                <h3>📄 Versões Disponíveis</h3>
+                ${versions.map(v => `
+                    <div class="task-item" onclick="selectVersion('${v.id}')" style="margin: 10px 0;">
+                        <strong>${v.version_tag}</strong>
+                        <div style="font-size: 12px; color: #666;">
+                            Criado em: ${new Date(v.created_at).toLocaleDateString()}
+                            ${v.pdf_url ? '📎 Com PDF' : '📄 Sem PDF'}
+                        </div>
+                    </div>
+                `).join('')}
+                ${versions.length === 0 ? '<p>Nenhuma versão criada ainda.</p>' : ''}
+            </div>
+        ` : `
+            <div class="card">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <input type="file" accept=".pdf" id="pdfUpload" onchange="uploadPDF(this.files[0])">
+                    <button class="secondary" onclick="selectVersion(null)">🔙 Trocar Versão</button>
+                </div>
+                <div id="pdf-container"></div>
+            </div>
+        `}
+    `;
+}
+
+function renderChecklistView() {
+    if (!currentProject) {
+        return `<div class="card">⚠️ Selecione um projeto primeiro no Dashboard</div>`;
+    }
+    
+    const grouped = {};
+    checklists.forEach(item => {
+        if (!grouped[item.area]) grouped[item.area] = [];
+        grouped[item.area].push(item);
+    });
+    
+    return `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <button onclick="changeView('dash')">← Voltar</button>
+                <h1 style="display: inline-block; margin-left: 16px;">✅ Checklist - ${projects.find(p => p.id === currentProject)?.name}</h1>
+            </div>
+            <button onclick="refreshChecklists()">🔄 Atualizar</button>
+        </div>
+        
+        ${Object.entries(grouped).map(([area, items]) => {
+            const checked = items.filter(i => i.is_checked).length;
+            const percent = (checked / items.length * 100).toFixed(0);
+            return `
+                <div class="card">
+                    <h3>🎯 ${area.toUpperCase()}</h3>
+                    <div style="background: #e0e0e0; border-radius: 10px; height: 8px; margin: 12px 0;">
+                        <div style="background: #2B7FDD; width: ${percent}%; height: 8px; border-radius: 10px;"></div>
+                    </div>
+                    <div style="font-size: 12px; margin-bottom: 16px;">${checked}/${items.length} itens concluídos (${percent}%)</div>
+                    ${items.map(item => `
+                        <div class="checklist-item">
+                            <input type="checkbox" ${item.is_checked ? 'checked' : ''} onchange="toggleChecklist('${item.id}', ${item.is_checked})">
+                            <div style="flex: 1;">
+                                <strong>${item.item}</strong>
+                                ${item.checked_at ? `<div style="font-size: 11px; color: #666;">✓ Verificado por ${item.checked_by} em ${new Date(item.checked_at).toLocaleDateString()}</div>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }).join('')}
+    `;
+}
+
+function renderDataLakeView() {
+    if (!currentProject) {
+        return `<div class="card">⚠️ Selecione um projeto primeiro no Dashboard</div>`;
+    }
+    
+    return `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <button onclick="changeView('dash')">← Voltar</button>
+                <h1 style="display: inline-block; margin-left: 16px;">💾 Data Lake - ${projects.find(p => p.id === currentProject)?.name}</h1>
+            </div>
+            <button onclick="createIndicator()">➕ Novo Indicador</button>
+        </div>
+        
+        <div class="card">
+            <h3>📊 Indicadores Cadastrados</h3>
+            ${indicators.map(ind => `
+                <div class="task-item">
+                    <strong>${ind.indicator_name}</strong>
+                    <div style="font-size: 12px; color: #666;">
+                        Página: ${ind.page || 'N/A'} | 
+                        Planilha: ${ind.spreadsheet_lake || 'N/A'}
+                        ${ind.needs_recalculation ? '<span style="color: #ff9800;"> ⚠️ Precisa recalcular</span>' : ''}
+                    </div>
+                    ${ind.contextualizacao_tecnica ? `<div style="font-size: 12px; margin-top: 8px;">📝 ${ind.contextualizacao_tecnica}</div>` : ''}
+                </div>
+            `).join('')}
+            ${indicators.length === 0 ? '<p>Nenhum indicador cadastrado ainda.</p>' : ''}
+        </div>
+    `;
+}
+
+function renderTeamView() {
+    const grouped = {};
+    members.forEach(m => {
+        if (!grouped[m.area]) grouped[m.area] = [];
+        grouped[m.area].push(m);
+    });
+    
+    return `
+        <h1 style="margin-bottom: 24px;">👥 Equipe SEGAPE</h1>
+        
+        ${Object.entries(grouped).map(([area, team]) => `
+            <div class="card">
+                <h3>🎯 ${area.toUpperCase()}</h3>
+                <div class="grid-2">
+                    ${team.map(m => `
+                        <div style="background: ${m.bg || '#f8f9fa'}; padding: 12px; border-radius: 8px;">
+                            <strong>${m.name}</strong>
+                            <div style="font-size: 13px; color: #666;">${m.role || 'Membro'}</div>
+                            ${m.email ? `<div style="font-size: 11px; color: #999;">${m.email}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('')}
+    `;
+}
+
+// ============================================
+// CONTROLE DE VIEWS
+// ============================================
+
+function showVersionSelector() {
+    currentVersion = null;
+    render();
+}
+
+function showPDFViewer() {
+    if (currentVersion) {
+        const version = versions.find(v => v.id === currentVersion);
+        if (version?.pdf_url) {
+            loadPDF(version.pdf_url);
         }
     }
+    render();
+}
 
-    // CARREGAR TAREFAS
-    async function loadTasks() {
-        const { data } = await supabaseClient.from('tasks').select('*');
-        const list = document.getElementById('task-list');
-        const layer = document.getElementById('pins-layer');
-        list.innerHTML = ''; layer.innerHTML = '';
+function showTasksList() {
+    alert(`📋 Lista de Tarefas:\n\n${tasks.map(t => `- ${t.task_text} (${t.is_done ? '✓' : '○'})`).join('\n')}`);
+}
 
-        data.forEach((t, i) => {
-            // Criar Pino
-            const pin = document.createElement('div');
-            pin.className = 'pin';
-            pin.style.left = t.x_pos + '%';
-            pin.style.top = t.y_pos + '%';
-            pin.style.background = t.color;
-            pin.innerHTML = `<span>${i+1}</span>`;
-            layer.appendChild(pin);
+async function selectProject(id) {
+    currentProject = id;
+    currentVersion = null;
+    await loadVersions(id);
+    await loadChecklists(id);
+    await loadIndicators(id);
+    changeView('projects');
+}
 
-            // Criar Card
-            const card = document.createElement('div');
-            card.className = `tc ${t.type === 'note' ? 'tc-obs' : ''}`;
-            card.style.borderLeftColor = t.color;
-            card.innerHTML = `<strong>#${i+1} ${t.author}</strong><br>${t.task_text}`;
-            list.appendChild(card);
-        });
+async function selectVersion(id) {
+    currentVersion = id;
+    await loadTasks();
+    const version = versions.find(v => v.id === id);
+    if (version?.pdf_url) {
+        await loadPDF(version.pdf_url);
     }
+    render();
+}
 
-    loadTasks();
+async function refreshChecklists() {
+    await loadChecklists(currentProject);
+    render();
+}
+
+async function createIndicator() {
+    const name = prompt('Nome do indicador:');
+    if (!name) return;
+    const page = prompt('Página no PDF:');
+    const spreadsheet = prompt('Planilha do Data Lake:');
+    
+    await supabase.from('project_indicators').insert([{
+        project_id: currentProject,
+        indicator_name: name,
+        page: parseInt(page) || null,
+        spreadsheet_lake: spreadsheet,
+        created_at: new Date()
+    }]);
+    await loadIndicators(currentProject);
+    render();
+}
+
+function changeView(view) {
+    currentView = view;
+    document.querySelectorAll('.nav div').forEach(el => {
+        el.classList.remove('active');
+    });
+    document.getElementById(`nav-${view}`)?.classList.add('active');
+    render();
+}
+
+// ============================================
+// RENDER PRINCIPAL
+// ============================================
+
+async function render() {
+    const el = document.getElementById('main');
+    
+    if (currentView === 'dash') {
+        el.innerHTML = renderDashboard();
+    } else if (currentView === 'projects') {
+        el.innerHTML = renderProjectView();
+    } else if (currentView === 'checklist') {
+        el.innerHTML = renderChecklistView();
+    } else if (currentView === 'datalake') {
+        el.innerHTML = renderDataLakeView();
+    } else if (currentView === 'team') {
+        el.innerHTML = renderTeamView();
+    }
+}
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+
+async function init() {
+    await loadProjects();
+    await loadMembers();
+    await loadVersions(currentProject);
+    await loadChecklists(currentProject);
+    render();
+    
+    // Real-time subscription
+    supabase.channel('public-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+            if (currentVersion) loadTasks();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'checklists' }, () => {
+            if (currentProject) loadChecklists(currentProject);
+        })
+        .subscribe();
+}
+
+// Expor funções globais
+window.changeView = changeView;
+window.selectProject = selectProject;
+window.selectVersion = selectVersion;
+window.createProject = createProject;
+window.createVersion = createVersion;
+window.uploadPDF = uploadPDF;
+window.toggleTask = toggleTask;
+window.toggleChecklist = toggleChecklist;
+window.refreshChecklists = refreshChecklists;
+window.createIndicator = createIndicator;
+window.showVersionSelector = showVersionSelector;
+window.showPDFViewer = showPDFViewer;
+window.showTasksList = showTasksList;
+
+init();
 </script>
+
 </body>
 </html>
