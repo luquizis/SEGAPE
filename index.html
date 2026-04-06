@@ -1,48 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>DEBUG SEGAPE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEC Tracker Pro — SEGAPE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --pri: #003087; --sec: #009c3b; --acc: #F5C800; --bg: #f4f2ec; --text: #1a1714; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .auth-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; margin: 100px auto; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-pri { background: var(--pri); color: white; }
+        .btn-sec { background: var(--sec); color: white; margin-top: 10px; }
+        
+        #app-content { display: none; padding: 20px; max-width: 1100px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--pri); padding-bottom: 10px; margin-bottom: 25px; }
+        .grid { display: grid; grid-template-columns: 320px 1fr; gap: 25px; }
+        .card { background: white; padding: 20px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 20px; }
+        .checklist-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f4f4f4; font-size: 0.9rem; }
+        .indicator-tag { display: block; background: #f0f2f5; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; border-left: 4px solid var(--pri); }
+    </style>
 </head>
-<body style="font-family:sans-serif; text-align:center; background:#f4f4f4; padding:50px;">
-    <div style="background:white; padding:30px; display:inline-block; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1)">
-        <h2>MEC Tracker - Teste de Resgate</h2>
-        <input type="email" id="email" placeholder="E-mail" style="display:block; width:250px; margin:10px auto; padding:10px">
-        <input type="password" id="password" placeholder="Senha" style="display:block; width:250px; margin:10px auto; padding:10px">
-        <button onclick="tentarLogar()" style="padding:10px 30px; background:#003087; color:white; border:none; cursor:pointer; font-weight:bold">ENTRAR AGORA</button>
-        <div id="log" style="margin-top:20px; font-size:12px; color:red; white-space:pre-wrap"></div>
+<body>
+
+    <div id="auth-section">
+        <div class="auth-card">
+            <h2 style="color:var(--pri)">SEGAPE Login</h2>
+            <input type="email" id="email" placeholder="E-mail institucional">
+            <input type="password" id="password" placeholder="Senha">
+            <button class="btn-pri" onclick="handleLogin()">Entrar no Sistema</button>
+        </div>
+    </div>
+
+    <div id="app-content">
+        <div class="header">
+            <div>
+                <h1 style="margin:0; color:var(--pri);">MEC Tracker Pro</h1>
+                <small>Gestão de Publicações SEGAPE</small>
+            </div>
+            <div style="text-align:right">
+                <div id="user-display" style="font-weight:bold; margin-bottom:5px"></div>
+                <button onclick="logout()" style="width:auto; padding:5px 15px; background:#dc3545; color:white;">Sair</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <aside>
+                <div class="card">
+                    <h3 style="margin-top:0">Novo Projeto</h3>
+                    <input type="text" id="proj-name" placeholder="Nome da Publicação">
+                    <input type="number" id="proj-year" placeholder="Ano">
+                    <input type="text" id="proj-demand" placeholder="Demandante">
+                    <button class="btn-pri" onclick="createProject()">Cadastrar</button>
+                </div>
+                <h3>Projetos Ativos</h3>
+                <div id="project-list"></div>
+            </aside>
+
+            <main id="main-view" style="display:none">
+                <div class="card" style="background: var(--pri); color:white; display:flex; justify-content:space-between; align-items:center;">
+                    <h2 id="active-title" style="margin:0">Selecione um Projeto</h2>
+                    <button onclick="generateReport()" style="width:auto; background:var(--acc); color:var(--text)">📄 PDF</button>
+                </div>
+
+                <div class="card">
+                    <h3>✅ Checklist de Diretrizes</h3>
+                    <div id="checklist-area"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Indicadores (Data Lake)</h3>
+                    <div id="indicator-area"></div>
+                    <hr>
+                    <input type="number" id="ind-pg" placeholder="Pág" style="width:70px">
+                    <input type="text" id="ind-name" placeholder="Indicador" style="width: calc(100% - 85px)">
+                    <input type="text" id="ind-query" placeholder="Query/Caminho Lake">
+                    <button class="btn-sec" onclick="addIndicator()">Salvar Indicador</button>
+                </div>
+            </main>
+        </div>
     </div>
 
     <script>
         const S_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
-        
-        function escreverLog(msg) {
-            document.getElementById('log').innerText += "\n" + msg;
+        const supabase = window.supabase.createClient(S_URL, S_KEY);
+
+        let currentProjectId = null;
+
+        async function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) alert("Erro: " + error.message);
+            else checkSession();
         }
 
-        async function tentarLogar() {
-            escreverLog("Iniciando tentativa...");
-            try {
-                const supabase = window.supabase.createClient(S_URL, S_KEY);
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                escreverLog("Conectando ao Supabase para o email: " + email);
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-                if (error) {
-                    escreverLog("ERRO DE LOGIN: " + error.message);
-                } else {
-                    escreverLog("SUCESSO! Redirecionando...");
-                    alert("LOGADO COM SUCESSO!");
-                    // Aqui reiniciaremos a interface robusta após confirmar este passo
-                }
-            } catch (err) {
-                escreverLog("ERRO CRÍTICO DE SCRIPT: " + err.message);
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                document.getElementById('user-display').innerText = session.user.email;
+                loadProjects();
             }
         }
-    </script>
-</body>
-</html>
+
+        async function loadProjects() {
+            const { data } = await supabase.from('projects').select('*').order('created_at
