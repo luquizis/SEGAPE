@@ -3,76 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEGAPE Tracker</title>
+    <title>MEC Tracker Pro — SEGAPE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #003087; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #002060; }
-        #app-content { display: none; }
+        :root { --pri: #003087; --sec: #009c3b; --acc: #F5C800; --bg: #f4f2ec; --text: #1a1714; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .auth-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; margin: 100px auto; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-pri { background: var(--pri); color: white; }
+        .btn-link { background: none; color: var(--pri); font-size: 0.9rem; text-decoration: underline; margin-top: 10px; }
+        
+        /* Layout App */
+        #app-content { display: none; padding: 20px; max-width: 1200px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--pri); padding-bottom: 10px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px; }
+        .checklist-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <div id="login-section" class="container">
-        <h2 style="text-align: center;">SEGAPE Login</h2>
-        <input type="email" id="email" placeholder="E-mail institucional">
-        <input type="password" id="password" placeholder="Senha">
-        <button onclick="login()">Entrar</button>
+    <div id="auth-section">
+        <div class="auth-card" id="login-form">
+            <h2 style="text-align:center; color:var(--pri)">SEGAPE Login</h2>
+            <input type="email" id="email" placeholder="E-mail institucional">
+            <input type="password" id="password" placeholder="Senha">
+            <button class="btn-pri" onclick="handleAuth('login')">Entrar</button>
+            <button class="btn-link" onclick="toggleAuthView('signup')">Criar nova conta</button>
+            <button class="btn-link" onclick="handleAuth('reset')">Esqueci minha senha</button>
+        </div>
+
+        <div class="auth-card" id="signup-form" style="display:none">
+            <h2 style="text-align:center; color:var(--sec)">Cadastrar Time</h2>
+            <input type="email" id="new-email" placeholder="E-mail institucional">
+            <input type="password" id="new-password" placeholder="Criar Senha">
+            <button class="btn-pri" style="background:var(--sec)" onclick="handleAuth('signup')">Cadastrar</button>
+            <button class="btn-link" onclick="toggleAuthView('login')">Voltar ao login</button>
+        </div>
     </div>
 
-    <div id="app-content" class="container">
-        <h2>Bem-vindo ao Tracker</h2>
-        <p>Você está logado!</p>
-        <button onclick="logout()" style="background-color: #dc3545;">Sair</button>
+    <div id="app-content">
+        <div class="header">
+            <h1>MEC Tracker <small style="font-size: 0.5em;">v2.5</small></h1>
+            <div>
+                <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
+                <button onclick="logout()" style="width: auto; background: #dc3545; color: white;">Sair</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <aside>
+                <div class="card">
+                    <h3>Novo Projeto</h3>
+                    <input type="text" id="proj-name" placeholder="Nome da Publicação">
+                    <input type="number" id="proj-year" placeholder="Ano">
+                    <input type="text" id="proj-demand" placeholder="Demandante (Ex: SEB)">
+                    <button class="btn-pri" onclick="createProject()">Criar Projeto</button>
+                </div>
+                <div id="project-list">
+                    </div>
+            </aside>
+
+            <main id="main-view" style="display:none">
+                <div class="card">
+                    <div style="display:flex; justify-content: space-between;">
+                        <h2 id="active-title">Selecione um projeto</h2>
+                        <button class="btn-pri" style="width:auto" onclick="generateReport()">📄 Relatório PDF</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>✅ Checklists Oficiais (Diretrizes 1-5)</h3>
+                    <div id="checklist-area"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Indicadores & Data Lake (Diretriz 3)</h3>
+                    <div id="indicator-area"></div>
+                    <hr>
+                    <h4>Novo Indicador</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="number" id="ind-pg" placeholder="Pág">
+                        <input type="text" id="ind-name" placeholder="Nome do Indicador">
+                    </div>
+                    <input type="text" id="ind-query" placeholder="Query/Planilha Lake">
+                    <button class="btn-pri" onclick="addIndicator()">Salvar Indicador</button>
+                </div>
+            </main>
+        </div>
     </div>
 
     <script>
-        // 1. Configuração Inicial (Substitua com suas chaves reais aqui!)
-        const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co'; 
+        // CONFIGURAÇÃO SUPABASE - INSIRA SEUS DADOS AQUI
+        const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 2. Gerenciamento de Sessão
-        async function checkUser() {
-            const { data: { session } } = await supabase.auth.getSession();
-            const loginSec = document.getElementById('login-section');
-            const appContent = document.getElementById('app-content');
+        let currentProjectId = null;
 
-            if (session) {
-                loginSec.style.display = 'none';
-                appContent.style.display = 'block';
-                console.log("Usuário logado:", session.user.email);
-            } else {
-                loginSec.style.display = 'block';
-                appContent.style.display = 'none';
+        // --- GESTÃO DE AUTENTICAÇÃO ---
+        function toggleAuthView(view) {
+            document.getElementById('login-form').style.display = view === 'login' ? 'block' : 'none';
+            document.getElementById('signup-form').style.display = view === 'signup' ? 'block' : 'none';
+        }
+
+        async function handleAuth(type) {
+            if (type === 'login') {
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                });
+                if (error) alert(error.message);
+                else checkSession();
+            } else if (type === 'signup') {
+                const { error } = await supabase.auth.signUp({
+                    email: document.getElementById('new-email').value,
+                    password: document.getElementById('new-password').value
+                });
+                if (error) alert("Verifique seu e-mail para confirmar!");
+                else toggleAuthView('login');
+            } else if (type === 'reset') {
+                const email = document.getElementById('email').value;
+                if (!email) return alert("Digite seu e-mail primeiro");
+                await supabase.auth.resetPasswordForEmail(email);
+                alert("Link de recuperação enviado!");
             }
         }
 
-        // 3. Função de Login
-        async function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                alert("Erro no login: " + error.message);
-            } else {
-                checkUser();
-            }
-        }
-
-        // 4. Função de Logout
         async function logout() {
             await supabase.auth.signOut();
-            checkUser();
+            location.reload();
         }
 
-        // Executar verificação ao carregar a página
-        checkUser();
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                document.getElementById('user-display').innerText = session.user.email;
+                loadProjects();
+            }
+        }
+
+        // --- GESTÃO DE PROJETOS ---
+        async function loadProjects() {
+            const { data } = await supabase.from('projects').select('*').order('created_at', {ascending: false});
+            const list = document.getElementById('project-list');
+            list.innerHTML = data.map(p => `
+                <div class="card" style="cursor:pointer; border-left: 5px solid var(--pri);" onclick="selectProject('${p.id}')">
+                    <strong>${p.name}</strong><br><small>${p.year} | ${p.demandante}</small>
+                </div>
+            `).join('');
+        }
+
+        async function createProject() {
+            const name = document.getElementById('proj-name').value;
+            const { data, error } = await supabase.from('projects').insert([{
+                name: name,
+                year: document.getElementById('proj-year').value,
+                demandante: document.getElementById('proj-demand').value
+            }]).select();
+            
+            if (data) {
+                // Criar checklist automático baseado nas Diretrizes SEGAPE
+                const diretrizes = [
+                    { area: 'Gerência', item: 'Organização clara de seções (Diretriz 1)' },
+                    { area: 'Consultas', item: 'Transparência das fontes/Período (Diretriz 2)' },
+                    { area: 'Gráficos', item: 'Contextualização e limitações (Diretriz 3)' },
+                    { area: 'Front', item: 'Linguagem acessível e objetiva (Diretriz 4)' },
+                    { area: 'Gerência', item: 'Alinhamento com PNE/Marcos (Diretriz 5)' }
+                ];
+                const inserts = diretrizes.map(d => ({ project_id: data[0].id, area: d.area, item_text: d.item }));
+                await supabase.from('project_checklists').insert(inserts);
+                loadProjects();
+            }
+        }
+
+        async function selectProject(id) {
+            currentProjectId = id;
+            document.getElementById('main-view').style.display = 'block';
+            const { data: p } = await supabase.from('projects').select('*').eq('id', id).single();
+            document.getElementById('active-title').innerText = p.name;
+            loadChecklist(id);
+            loadIndicators(id);
+        }
+
+        async function loadChecklist(id) {
+            const { data } = await supabase.from('project_checklists').select('*').eq('project_id', id);
+            document.getElementById('checklist-area').innerHTML = data.map(c => `
+                <div class="checklist-item">
+                    <input type="checkbox" ${c.is_done ? 'checked' : ''} onchange="updateCheck('${c.id}', ${c.is_done})">
+                    <span><strong>[${c.area}]</strong> ${c.item_text}</span>
+                </div>
+            `).join('');
+        }
+
+        async function updateCheck(id, status) {
+            await supabase.from('project_checklists').update({ is_done: !status }).eq('id', id);
+            loadChecklist(currentProjectId);
+        }
+
+        // --- GESTÃO DE INDICADORES ---
+        async function loadIndicators(id) {
+            const { data } = await supabase.from('project_indicators').select('*').eq('project_id', id);
+            document.getElementById('indicator-area').innerHTML = data.map(i => `
+                <div class="checklist-item" style="background:#f9f9f9; padding:5px; border-radius:4px">
+                    <span>Pág ${i.page}: <strong>${i.indicator}</strong><br><small>Query: ${i.query}</small></span>
+                </div>
+            `).join('');
+        }
+
+        async function addIndicator() {
+            await supabase.from('project_indicators').insert([{
+                project_id: currentProjectId,
+                page: document.getElementById('ind-pg').value,
+                indicator: document.getElementById('ind-name').value,
+                query: document.getElementById('ind-query').value
+            }]);
+            loadIndicators(currentProjectId);
+        }
+
+        function generateReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Relatório de Aprimoramento - SEGAPE", 10, 10);
+            doc.text(`Projeto: ${document.getElementById('active-title').innerText}`, 10, 20);
+            doc.save("relatorio-segape.pdf");
+        }
+
+        checkSession();
     </script>
 </body>
 </html>
