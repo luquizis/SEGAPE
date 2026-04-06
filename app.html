@@ -2,64 +2,62 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>MEC Tracker Pro</title>
+    <title>MEC Tracker — SEGAPE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background: #f4f2ec; padding: 20px; text-align: center; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 350px; margin: 50px auto; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: #003087; color: white; }
-        #app-area { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="login-area" class="card">
+    <div id="tela-login" class="card">
         <h2 style="color:#003087">SEGAPE Login</h2>
-        <input type="email" id="email" placeholder="E-mail">
-        <input type="password" id="pass" placeholder="Senha">
-        <button onclick="entrar()">Entrar</button>
-        <p id="aviso" style="color:red; font-size:12px; margin-top:10px"></p>
+        <input type="email" id="user-email" placeholder="E-mail">
+        <input type="password" id="user-pass" placeholder="Senha">
+        <button onclick="acaoEntrar()">Entrar no Sistema</button>
+        <p id="feedback" style="color:red; font-size:12px; margin-top:10px"></p>
     </div>
 
-    <div id="app-area">
+    <div id="tela-app" style="display:none">
         <h1>MEC Tracker Pro</h1>
-        <p>Você entrou com sucesso!</p>
-        <button onclick="sair()" style="background:#dc3545; width:auto">Sair</button>
+        <div class="card">
+            <p>Conexão estabelecida com sucesso!</p>
+            <button onclick="supabaseClient.auth.signOut().then(() => location.reload())" style="background:#dc3545">Sair</button>
+        </div>
     </div>
 
     <script>
-        const S_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
+        // Mudamos o nome da variável para 'supabaseClient' para evitar o erro de duplicata no cache
+        const configURL = 'https://zvfwjuooztjeuokesfek.supabase.co';
+        const configKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
         
-        const supabase = window.supabase.createClient(S_URL, S_KEY);
+        const supabaseClient = window.supabase.createClient(configURL, configKEY);
 
-        async function entrar() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('pass').value;
-            const aviso = document.getElementById('aviso');
+        async function acaoEntrar() {
+            const email = document.getElementById('user-email').value;
+            const pass = document.getElementById('user-pass').value;
+            const feedback = document.getElementById('feedback');
             
-            aviso.innerText = "Verificando...";
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            feedback.innerText = "Validando...";
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
 
             if (error) {
-                aviso.innerText = "Erro: " + error.message;
+                feedback.innerText = "Erro: " + error.message;
             } else {
                 location.reload();
             }
         }
 
-        async function verificar() {
-            const { data: { session } } = await supabase.auth.getSession();
+        window.onload = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                document.getElementById('login-area').style.display = 'none';
-                document.getElementById('app-area').style.display = 'block';
+                document.getElementById('tela-login').style.display = 'none';
+                document.getElementById('tela-app').style.display = 'block';
             }
-        }
-
-        function sair() { supabase.auth.signOut().then(() => location.reload()); }
-        
-        window.onload = verificar;
+        };
     </script>
 </body>
 </html>
