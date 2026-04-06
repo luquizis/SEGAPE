@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>MEC Tracker Pro</title>
+    <title>MEC Tracker - Novo Projeto</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background: #f4f2ec; padding: 20px; text-align: center; }
@@ -17,6 +17,7 @@
 
     <div id="login-screen" class="card">
         <h2>SEGAPE Login</h2>
+        <p style="font-size: 12px; color: #666;">Use o novo usuário criado no novo projeto</p>
         <input type="email" id="email" placeholder="E-mail">
         <input type="password" id="password" placeholder="Senha">
         <button onclick="login()">Entrar</button>
@@ -27,53 +28,56 @@
         <div class="card" style="max-width: 100%;">
             <h3>Novo Projeto</h3>
             <input type="text" id="p-name" placeholder="Nome da Publicação">
-            <button onclick="addProject()">Cadastrar</button>
+            <button onclick="addProject()">Cadastrar Projeto</button>
         </div>
-        <h3>Projetos Ativos:</h3>
-        <div id="list"></div>
+        <div id="list" style="margin-top: 20px;"></div>
         <button onclick="logout()" style="background:#dc3545; margin-top:20px; width:auto">Sair</button>
     </div>
 
     <script>
+        // COLE SUAS NOVAS CHAVES AQUI ABAIXO:
         const S_URL = 'https://ujneiupcuqiqkkltgvkv.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0';
+        
         const supabase = window.supabase.createClient(S_URL, S_KEY);
 
         async function login() {
-            const { error } = await supabase.auth.signInWithPassword({
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
-            });
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) alert("Erro: " + error.message);
-            else location.reload();
+            else checkSession();
         }
 
-        async function check() {
+        async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
-                load();
+                loadProjects();
             }
         }
 
-        async function load() {
-            const { data } = await supabase.from('projects').select('*').order('created_at', {ascending: false});
-            document.getElementById('list').innerHTML = data.map(p => `
-                <div class="item"><strong>${p.name}</strong></div>
-            `).join('') || '<p>Nenhum projeto ainda.</p>';
+        async function loadProjects() {
+            const { data, error } = await supabase.from('projects').select('*').order('created_at', {ascending: false});
+            if (error) console.log("Erro ao carregar (tabela existe?):", error.message);
+            else {
+                document.getElementById('list').innerHTML = data.map(p => `
+                    <div class="item"><strong>${p.name}</strong></div>
+                `).join('') || '<p>Nenhum projeto cadastrado.</p>';
+            }
         }
 
         async function addProject() {
             const name = document.getElementById('p-name').value;
             const { error } = await supabase.from('projects').insert([{ name }]);
-            if (error) alert(error.message);
-            else { document.getElementById('p-name').value = ''; load(); }
+            if (error) alert("Erro: " + error.message);
+            else { document.getElementById('p-name').value = ''; loadProjects(); }
         }
 
         async function logout() { await supabase.auth.signOut(); location.reload(); }
         
-        check();
+        window.onload = checkSession;
     </script>
 </body>
 </html>
