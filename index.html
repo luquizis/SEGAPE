@@ -262,11 +262,16 @@ button.secondary {
 // ============================================
 // 🔐 CONFIGURAÇÃO DO SUPABASE (SUAS CREDENCIAIS)
 // ============================================
-const SUPABASE_URL = 'https://ujneiupcuqiqkkltgvkv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0';
+// ============================================
+// 🔐 CONFIGURAÇÃO ÚNICA DO SUPABASE (V9)
+// ============================================
+const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
 
-// Criar cliente Supabase
+// A variável 'supabase' deve ser declarada apenas UMA VEZ em todo o código
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Verifique se NÃO existe outra linha como "const supabase =" ou "var supabase =" mais abaixo.
 
 // Configurar PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
