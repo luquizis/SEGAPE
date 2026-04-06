@@ -262,7 +262,7 @@ button.secondary {
 // ============================================
 // 🔐 CONFIGURAÇÃO DO SUPABASE (SUAS CREDENCIAIS)
 // ============================================
-const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
+const SUPABASE_URL = 'https://ujneiupcuqiqkkltgvkv.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0';
 
 // Criar cliente Supabase
@@ -308,14 +308,20 @@ async function loadProjects() {
         if (error) throw error;
         projects = data || [];
         
-        // Carregar pendências
-        const { data: pendencies } = await supabase.from('global_pendencies').select('*');
-        window.pendencies = pendencies || [];
+        // Tenta carregar pendências, mas não trava se a View falhar
+        try {
+            const { data: pendencies } = await supabase.from('global_pendencies').select('*');
+            window.pendencies = pendencies || [];
+        } catch (vError) {
+            console.warn('View global_pendencies não encontrada ou inacessível.');
+            window.pendencies = [];
+        }
         
         console.log(`📁 ${projects.length} projetos carregados`);
         return true;
     } catch (error) {
         console.error('Erro ao carregar projetos:', error);
+        connectionError = error.message; // Captura o erro para exibir na tela
         return false;
     }
 }
