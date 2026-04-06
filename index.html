@@ -2,166 +2,226 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>MEC Tracker Pro | SEGAPE</title>
+    <title>MEC Tracker Pro | SEGAPE 2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        :root { --pri: #003087; --design: #e0b3ff; --front: #b3ffcc; --back: #ffe6b3; --border: #e1e4e8; }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; background: #f8f9fa; }
+        /* APROVEITANDO SEU CSS ORIGINAL */
+        :root {
+            --font:'Sora',sans-serif; --mono:'DM Mono',monospace;
+            --bg:#F5F3EE; --surface:#FFF; --border:#E2DEDA;
+            --pri:#003087; --text:#1A1714;
+            --design:#4A3F9F; --design-bg:#EEEDFB;
+            --front:#0D6B4F; --front-bg:#E1F5EE;
+            --back:#7A4A0A; --back-bg:#FDF0DC;
+            --textc:#14548A; --textc-bg:#E4F1FA;
+            --sup:#4A4845; --sup-bg:#F0EDE8;
+        }
+        body { font-family: var(--font); margin: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
         
-        /* Sidebar Lateral */
-        .sidebar { width: 240px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .menu-item { padding: 12px 20px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
-        .menu-item:hover, .menu-item.active { background: #e6eefc; color: var(--pri); font-weight: bold; }
-        .team-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+        /* SIDEBAR */
+        #sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sb-item { padding: 12px 15px; cursor: pointer; font-size: 13px; border-left: 3px solid transparent; }
+        .sb-item.active { background: var(--bg); border-left-color: var(--pri); font-weight: 600; }
+        .sb-sect { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; padding: 20px 15px 5px; }
 
-        /* Área de Conteúdo */
-        .main { flex: 1; overflow-y: auto; display: none; padding: 30px; }
-        .main.active { display: block; }
-        
-        /* Layout de Revisão (PDF) */
-        .review-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; height: 100%; }
-        .pdf-canvas { background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); min-height: 800px; padding: 40px; }
-        
-        /* Cards de Tarefa */
-        .task-card { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 6px solid #ccc; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .task-obs { border-left-style: dashed; background: #fdfdfe; }
+        /* VIEWPORTS */
+        .view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+        .view.active { display: flex; }
 
-        /* Tabelas e Formulários */
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-        .form-group { margin-bottom: 15px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        /* INTERFACE DE REVISÃO (SUA ORIGINAL) */
+        #workspace { display: flex; flex: 1; overflow: hidden; }
+        #pdf-pane { flex: 1; background: #555; overflow: auto; display: flex; justify-content: center; padding: 20px; }
+        .page-wrap { position: relative; background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        #tasks-pane { width: 340px; background: white; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+
+        /* PINOS NO PDF */
+        .pin { position: absolute; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg) translate(-50%,-100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 10px; cursor: pointer; }
+        .pin span { transform: rotate(45deg); }
+
+        /* ABA CADASTRO */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; max-width: 900px; }
+        .card-form { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 6px; }
+        
+        /* ESTILO DOS CARDS DE TAREFA (SEU ORIGINAL) */
+        .tc { padding: 12px; margin: 10px; border-radius: 8px; border-left: 4px solid #ccc; font-size: 12px; position: relative; }
+        .tc-obs { border-left-style: dashed; opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <div style="padding: 20px; border-bottom: 2px solid var(--pri)">
-            <strong>MEC Tracker <span style="color:var(--pri)">SEGAPE</span></strong>
+<div id="sidebar">
+    <div style="padding: 20px; font-weight: 800; color: var(--pri)">MEC TRACKER <small>2.0</small></div>
+    
+    <div class="sb-sect">Navegação</div>
+    <div class="sb-item active" onclick="switchView('view-revisao')">📄 Revisão PDF</div>
+    <div class="sb-item" onclick="switchView('view-cadastro')">⚙️ Cadastro Projeto</div>
+    <div class="sb-item" onclick="switchView('view-indicadores')">📊 Auditoria Lake</div>
+    
+    <div class="sb-sect">Pessoas</div>
+    <div id="membros-list" style="padding: 0 15px; font-size: 11px; color: #666"></div>
+</div>
+
+<div id="main" style="flex:1; display:flex; flex-direction:column;">
+    
+    <div style="height: 55px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; justify-content: space-between;">
+        <strong id="current-project">ATM — Aqui tem MEC</strong>
+        <div>
+            <input type="file" id="pdf-input" hidden accept="application/pdf">
+            <button onclick="document.getElementById('pdf-input').click()" style="padding: 8px 15px; cursor: pointer;">⬆ Subir PDF</button>
+            <button onclick="gerarPDF()" style="background: var(--pri); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Exportar Relatório</button>
         </div>
-        <div class="menu-item active" onclick="showTab('tab-revisao')">📄 Revisão de Versão</div>
-        <div class="menu-item" onclick="showTab('tab-cadastro')">➕ Cadastro de Projeto</div>
-        <div class="menu-item" onclick="showTab('tab-historico')">📜 Histórico/Versões</div>
+    </div>
+
+    <div id="view-revisao" class="view active">
+        <div id="workspace">
+            <div id="pdf-pane">
+                <div id="pdf-container" class="page-wrap">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div id="pins-layer"></div>
+                </div>
+            </div>
+            <div id="tasks-pane">
+                <div style="padding: 15px; border-bottom: 1px solid var(--border); font-weight: 700;">Gestão Editorial</div>
+                <div id="task-list" style="overflow-y: auto; flex: 1;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-cadastro" class="view">
+        <div class="form-grid">
+            <div class="card-form">
+                <h3>Dados da Publicação</h3>
+                <label>Nome</label><input type="text" id="p-nome" placeholder="Nome da publicação">
+                <label>Ano</label><input type="number" value="2026">
+                <label>Demandante</label><input type="text" placeholder="Ex: SECADI">
+            </div>
+            <div class="card-form">
+                <h3>Responsáveis</h3>
+                <label>Design</label><select><option>Marina</option><option>Rodrigo</option></select>
+                <label>Front</label><select><option>André</option></select>
+                <label>Supervisão</label><select><option>Luiz</option><option>Lucas</option></select>
+            </div>
+            <div class="card-form" style="grid-column: span 2;">
+                <h3>Checklist de Diretrizes (Governança)</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div><strong>Design</strong><br><label><input type="checkbox"> Padronização (Dir 1)</label></div>
+                    <div><strong>Front</strong><br><label><input type="checkbox"> Fontes/Período (Dir 2)</label></div>
+                    <div><strong>Supervisão</strong><br><label><input type="checkbox"> Coerência PNE (Dir 5)</label></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-task" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:25px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:100; width:300px;">
+    <h4 style="margin:0">Novo Ponto de Revisão</h4>
+    <select id="task-type" style="margin: 10px 0;">
+        <option value="task">🔴 TAREFA (Exige correção)</option>
+        <option value="note">🟡 OBSERVAÇÃO (Estudo/Atenção)</option>
+    </select>
+    <textarea id="task-txt" rows="4" placeholder="Descreva o que precisa ser feito..."></textarea>
+    <div style="margin-top:15px; display:flex; gap:10px;">
+        <button onclick="closeModal()" style="flex:1">Cancelar</button>
+        <button onclick="saveToSupabase()" style="flex:1; background:var(--pri); color:white; border:none; border-radius:5px;">Salvar</button>
+    </div>
+</div>
+
+<script>
+    // CONFIG SUPABASE (Sua chave)
+    const supabaseClient = window.supabase.createClient('https://zvfwjuooztjeuokesfek.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00');
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    let lastClickPos = { x: 0, y: 0 };
+    let currentProjId = 'atm';
+
+    // MUDAR ABAS
+    function switchView(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // UPLOAD E RENDER PDF
+    document.getElementById('pdf-input').onchange = async (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const typedarray = new Uint8Array(this.result);
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.getElementById('pdf-canvas');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    // CLIQUE NO PDF
+    document.getElementById('pdf-container').onclick = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        lastClickPos.x = ((e.clientX - rect.left) / rect.width) * 100;
+        lastClickPos.y = ((e.clientY - rect.top) / rect.height) * 100;
+        document.getElementById('modal-task').style.display = 'block';
+    };
+
+    function closeModal() { document.getElementById('modal-task').style.display = 'none'; }
+
+    // SALVAR NO SUPABASE (Fase 2 - Persistência)
+    async function saveToSupabase() {
+        const txt = document.getElementById('task-txt').value;
+        const type = document.getElementById('task-type').value;
         
-        <div style="padding: 20px; font-size: 11px; color: #999; margin-top: auto;">
-            <strong>EQUIPE LOGADA</strong><br>
-            Luiz (Supervisão)
-        </div>
-    </div>
+        const { error } = await supabaseClient.from('tasks').insert([{
+            project_id: currentProjId,
+            task_text: txt,
+            type: type,
+            x_pos: lastClickPos.x,
+            y_pos: lastClickPos.y,
+            author: 'Luiz',
+            page: 1,
+            color: type === 'task' ? '#D83A3A' : '#F5C800'
+        }]);
 
-    <div id="tab-revisao" class="main active">
-        <div class="review-layout">
-            <div class="pdf-canvas">
-                <div style="display:flex; justify-content: space-between">
-                    <h2>ATM — Aqui Tem MEC <small style="font-size:12px; color:#666">v2.1 (Atual)</small></h2>
-                    <button onclick="gerarRelatorioPDF()">Gerar Relatório PDF</button>
-                </div>
-                <hr>
-                <div style="text-align: center; border: 1px solid #eee; padding: 20px;">
-                    <img src="https://via.placeholder.com/600x400?text=IDEB+INDICADORES+2025" style="width:100%">
-                    <p style="color:#999">Clique no documento para inserir Tarefa ou Observação</p>
-                </div>
-            </div>
-            
-            <div class="tasks-panel">
-                <div style="font-weight: bold; margin-bottom: 15px;">Tarefas da Versão</div>
-                <div id="tasks-container">
-                    <div class="task-card" style="border-left-color: var(--back)">
-                        <strong>#1 Eduardo (Back)</strong><br>
-                        Verificar com Lucio a atualização desse dado.<br>
-                        <small>p. 7 • <a href="#">Concluir</a></small>
-                    </div>
-                    <div class="task-card task-obs" style="border-left-color: #ddd">
-                        <strong>📌 Observação - Luiz</strong><br>
-                        Ponto de atenção: O valor do IDEB ensino médio parece divergir do INEP.<br>
-                        <small>p. 12</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="tab-cadastro" class="main">
-        <h2>Cadastro de Nova Publicação</h2>
-        <div class="card" style="background:white; padding:25px; border-radius:8px">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px">
-                <div class="form-group"><label>Nome do Projeto</label><input id="c-nome" placeholder="Ex: ATM Equidade"></div>
-                <div class="form-group"><label>Ano</label><input id="c-ano" type="number" value="2026"></div>
-                <div class="form-group"><label>Demandante</label><input id="c-dem" placeholder="Ex: SECADI"></div>
-                <div class="form-group"><label>Previsão Lançamento</label><input id="c-data" type="date"></div>
-            </div>
-            
-            <h3>✅ Checklist de Diretrizes (Início do Projeto)</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 40px">
-                <div>
-                    <strong style="color:var(--pri)">Design (Diretriz 4)</strong>
-                    <p><input type="checkbox"> Linguagem visual clara e acessível</p>
-                    <p><input type="checkbox"> Apoio visual adequado (Gráficos/Tabelas)</p>
-                </div>
-                <div>
-                    <strong style="color:var(--pri)">Metodologia (Diretriz 2)</strong>
-                    <p><input type="checkbox"> Transparência das fontes e períodos</p>
-                    <p><input type="checkbox"> Identificação das instituições (INEP/MEC)</p>
-                </div>
-            </div>
-            <button style="background:var(--pri); color:white; border:none; padding:15px; border-radius:5px; cursor:pointer" onclick="alert('Projeto Salvo!')">SALVAR E INICIAR PROJETO</button>
-        </div>
-    </div>
-
-    <div id="tab-historico" class="main">
-        <h2>Histórico de Alterações — ATM</h2>
-        <table>
-            <thead>
-                <tr style="background:#eee">
-                    <th>Versão</th>
-                    <th>Data</th>
-                    <th>Alterações Realizadas</th>
-                    <th>Responsável</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>v2.0</td>
-                    <td>01/04/2026</td>
-                    <td>Correção dos indicadores de fluxo do Ensino Médio.</td>
-                    <td>André (Front)</td>
-                    <td><button>Ver v2.0</button></td>
-                </tr>
-                <tr>
-                    <td>v1.0</td>
-                    <td>15/03/2026</td>
-                    <td>Versão inicial para revisão de supervisão.</td>
-                    <td>Marina (Design)</td>
-                    <td><button>Ver v1.0</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <script>
-        const sURL = 'https://zvfwjuooztjeuokesfek.supabase.co';
-        const sKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
-        const supabaseClient = window.supabase.createClient(sURL, sKEY);
-
-        function showTab(tabId) {
-            document.querySelectorAll('.main').forEach(m => m.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+        if (!error) {
+            closeModal();
+            loadTasks();
         }
+    }
 
-        function gerarRelatorioPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFontSize(18); doc.text("Relatório de Aprimoramento - SEGAPE", 20, 20);
-            doc.setFontSize(12); doc.text("Publicação: ATM — Aqui Tem MEC | v2.1", 20, 30);
-            doc.text("--------------------------------------------------", 20, 35);
-            doc.text("1. Eduardo (Back): Verificar atualização p.7", 20, 45);
-            doc.text("2. Obs Luiz: Ponto de atenção IDEB p.12", 20, 55);
-            doc.save("Relatorio_SEGAPE.pdf");
-        }
-    </script>
+    // CARREGAR TAREFAS
+    async function loadTasks() {
+        const { data } = await supabaseClient.from('tasks').select('*');
+        const list = document.getElementById('task-list');
+        const layer = document.getElementById('pins-layer');
+        list.innerHTML = ''; layer.innerHTML = '';
+
+        data.forEach((t, i) => {
+            // Criar Pino
+            const pin = document.createElement('div');
+            pin.className = 'pin';
+            pin.style.left = t.x_pos + '%';
+            pin.style.top = t.y_pos + '%';
+            pin.style.background = t.color;
+            pin.innerHTML = `<span>${i+1}</span>`;
+            layer.appendChild(pin);
+
+            // Criar Card
+            const card = document.createElement('div');
+            card.className = `tc ${t.type === 'note' ? 'tc-obs' : ''}`;
+            card.style.borderLeftColor = t.color;
+            card.innerHTML = `<strong>#${i+1} ${t.author}</strong><br>${t.task_text}`;
+            list.appendChild(card);
+        });
+    }
+
+    loadTasks();
+</script>
 </body>
 </html>
