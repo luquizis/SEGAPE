@@ -110,3 +110,99 @@
 
         async function loadProjects() {
             const { data } = await supabase.from('projects').select('*').order('created_at
+
+                                                                               async function loadProjects() {
+            console.log("Carregando projetos...");
+            const { data, error } = await supabase.from('projects').select('*').order('created_at', {ascending: false});
+            if (error) {
+                console.error("Erro ao carregar projetos:", error.message);
+                return;
+            }
+            document.getElementById('project-list').innerHTML = data.map(p => `
+                <div class="card" style="cursor:pointer; border-left: 6px solid var(--pri); padding:10px; margin-bottom:10px" onclick="selectProject('${p.id}')">
+                    <strong>${p.name}</strong><br><small>${p.year}</small>
+                </div>
+            `).join('') || '<p style="font-size:12px">Nenhum projeto cadastrado.</p>';
+        }
+
+        async function createProject() {
+            const name = document.getElementById('proj-name').value;
+            if(!name) return alert("Digite o nome do projeto");
+            
+            const { data, error } = await supabase.from('projects').insert([{
+                name: name,
+                year: document.getElementById('proj-year').value,
+                demandante: document.getElementById('proj-demand').value
+            }]).select();
+
+            if (data) {
+                const diretrizes = [
+                    { area: 'GERÊNCIA', item: 'Organização de seções [Dir. 1]' },
+                    { area: 'CONSULTAS', item: 'Transparência de fontes [Dir. 2]' },
+                    { area: 'GRÁFICOS', item: 'Contextualização de dados [Dir. 3]' },
+                    { area: 'CONTEÚDO', item: 'Linguagem acessível [Dir. 4]' },
+                    { area: 'ESTRATÉGIA', item: 'Alinhamento PNE [Dir. 5]' }
+                ];
+                await supabase.from('project_checklists').insert(diretrizes.map(d => ({ project_id: data[0].id, area: d.area, item_text: d.item })));
+                loadProjects();
+                alert("Projeto criado com sucesso!");
+            } else {
+                alert("Erro ao criar: " + error.message);
+            }
+        }
+
+        async function selectProject(id) {
+            currentProjectId = id;
+            document.getElementById('main-view').style.display = 'block';
+            const { data: p } = await supabase.from('projects').select('*').eq('id', id).single();
+            document.getElementById('active-title').innerText = p.name;
+            loadChecklist(id);
+            loadIndicators(id);
+        }
+
+        async function loadChecklist(id) {
+            const { data } = await supabase.from('project_checklists').select('*').eq('project_id', id);
+            document.getElementById('checklist-area').innerHTML = data.map(c => `
+                <div class="checklist-item">
+                    <input type="checkbox" ${c.is_done ? 'checked' : ''} onchange="updateCheck('${c.id}', ${c.is_done})">
+                    <span><strong>[${c.area}]</strong> ${c.item_text}</span>
+                </div>
+            `).join('');
+        }
+
+        async function updateCheck(id, status) {
+            await supabase.from('project_checklists').update({ is_done: !status }).eq('id', id);
+            loadChecklist(currentProjectId);
+        }
+
+        async function loadIndicators(id) {
+            const { data } = await supabase.from('project_indicators').select('*').eq('project_id', id);
+            document.getElementById('indicator-area').innerHTML = data.map(i => `
+                <div class="indicator-tag">Pág ${i.page} | <strong>${i.indicator}</strong><br><small>${i.query}</small></div>
+            `).join('') || '<p>Sem indicadores.</p>';
+        }
+
+        async function addIndicator() {
+            await supabase.from('project_indicators').insert([{
+                project_id: currentProjectId,
+                page: document.getElementById('ind-pg').value,
+                indicator: document.getElementById('ind-name').value,
+                query: document.getElementById('ind-query').value
+            }]);
+            loadIndicators(currentProjectId);
+        }
+
+        async function logout() { await supabase.auth.signOut(); location.reload(); }
+
+        function generateReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("RELATÓRIO SEGAPE - " + document.getElementById('active-title').innerText, 10, 10);
+            doc.save("relatorio.pdf");
+        }
+
+        // Tenta recuperar sessão ao carregar
+        window.onload = checkSession;
+    </script>
+</body>
+</html>
