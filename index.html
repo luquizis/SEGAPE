@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEGAPE - Sistema de Gestão de Projetos</title>
     
-    <!-- Bibliotecas -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
@@ -362,25 +361,25 @@
             </div>
             
             <div class="nav">
-                <div id="nav-dash" class="active" onclick="changeView('dash')">
+                <div id="nav-dash" class="active">
                     📈 Dashboard
                 </div>
-                <div id="nav-projects" onclick="changeView('projects')">
+                <div id="nav-projects">
                     📁 Projetos
                 </div>
-                <div id="nav-checklist" onclick="changeView('checklist')">
+                <div id="nav-checklist">
                     ✅ Checklist
                 </div>
-                <div id="nav-datalake" onclick="changeView('datalake')">
+                <div id="nav-datalake">
                     💾 Data Lake
                 </div>
-                <div id="nav-team" onclick="changeView('team')">
+                <div id="nav-team">
                     👥 Equipe
                 </div>
             </div>
             
             <div class="sidebar-footer">
-                <button class="btn-new-project" onclick="createProject()">
+                <button class="btn-new-project">
                     ➕ Novo Projeto
                 </button>
             </div>
@@ -485,6 +484,7 @@
                 .order('created_at', { ascending: false });
             if (error) throw error;
             versions = data || [];
+            console.log(`📄 ${versions.length} versões carregadas`);
             return true;
         } catch (error) {
             console.error('Erro ao carregar versões:', error);
@@ -517,6 +517,7 @@
                 .eq('project_id', projectId);
             if (error) throw error;
             checklists = data || [];
+            console.log(`✅ ${checklists.length} itens de checklist carregados`);
             return true;
         } catch (error) {
             console.error('Erro ao carregar checklists:', error);
@@ -532,6 +533,7 @@
                 .eq('project_id', projectId);
             if (error) throw error;
             indicators = data || [];
+            console.log(`📊 ${indicators.length} indicadores carregados`);
             return true;
         } catch (error) {
             console.error('Erro ao carregar indicadores:', error);
@@ -791,7 +793,7 @@
                 ${projects.map(p => {
                     const stats = pendingData.find(pd => pd && pd.project_id === p.id) || {};
                     return `
-                        <div class="card" onclick="selectProject('${p.id}')" style="cursor: pointer;">
+                        <div class="card" data-project-id="${p.id}" style="cursor: pointer;">
                             <div class="project-card">
                                 <div>
                                     <span class="project-badge" style="background: ${p.color || '#ccc'}"></span>
@@ -833,36 +835,38 @@
         return `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <button onclick="changeView('dash')">← Voltar</button>
+                    <button class="back-to-dash">← Voltar</button>
                     <h1 style="display: inline-block; margin-left: 16px;">📁 ${project?.name || currentProject}</h1>
                 </div>
-                <button onclick="createVersion()">➕ Nova Versão</button>
+                <button class="create-version-btn">➕ Nova Versão</button>
             </div>
             
             <div class="tabs">
-                <div class="tab ${!currentVersion ? 'active' : ''}" onclick="showVersionSelector()">📄 Versões</div>
-                ${currentVersion ? `<div class="tab active" onclick="showPDFViewer()">📖 Visualizador</div>` : ''}
+                <div class="tab ${!currentVersion ? 'active' : ''}" id="versions-tab">📄 Versões</div>
+                ${currentVersion ? `<div class="tab active" id="pdf-viewer-tab">📖 Visualizador</div>` : ''}
             </div>
             
             ${!currentVersion ? `
                 <div class="card">
                     <h3>📄 Versões Disponíveis</h3>
-                    ${versions.map(v => `
-                        <div class="task-item" onclick="selectVersion('${v.id}')" style="margin: 10px 0;">
-                            <strong>${v.version_tag}</strong>
-                            <div style="font-size: 12px; color: #666;">
-                                Criado em: ${new Date(v.created_at).toLocaleDateString()}
-                                ${v.pdf_url ? '📎 Com PDF' : '📄 Sem PDF'}
+                    <div id="versions-list">
+                        ${versions.map(v => `
+                            <div class="task-item" data-version-id="${v.id}" style="margin: 10px 0;">
+                                <strong>${v.version_tag}</strong>
+                                <div style="font-size: 12px; color: #666;">
+                                    Criado em: ${new Date(v.created_at).toLocaleDateString()}
+                                    ${v.pdf_url ? '📎 Com PDF' : '📄 Sem PDF'}
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
-                    ${versions.length === 0 ? '<p>Nenhuma versão criada ainda.</p>' : ''}
+                        `).join('')}
+                        ${versions.length === 0 ? '<p>Nenhuma versão criada ainda.</p>' : ''}
+                    </div>
                 </div>
             ` : `
                 <div class="card">
                     <div style="display: flex; gap: 12px; align-items: center;">
-                        <input type="file" accept=".pdf" id="pdfUpload" onchange="uploadPDF(this.files[0])">
-                        <button class="secondary" onclick="selectVersion(null)">🔙 Trocar Versão</button>
+                        <input type="file" accept=".pdf" id="pdfUpload">
+                        <button class="secondary change-version-btn">🔙 Trocar Versão</button>
                     </div>
                     <div id="pdf-container"></div>
                 </div>
@@ -884,33 +888,35 @@
         return `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <button onclick="changeView('dash')">← Voltar</button>
+                    <button class="back-to-dash">← Voltar</button>
                     <h1 style="display: inline-block; margin-left: 16px;">✅ Checklist</h1>
                 </div>
-                <button onclick="refreshChecklists()">🔄 Atualizar</button>
+                <button class="refresh-checklist-btn">🔄 Atualizar</button>
             </div>
             
-            ${Object.entries(grouped).map(([area, items]) => {
-                const checked = items.filter(i => i.is_checked).length;
-                const percent = items.length > 0 ? (checked / items.length * 100).toFixed(0) : 0;
-                return `
-                    <div class="card">
-                        <h3>🎯 ${area.toUpperCase()}</h3>
-                        <div style="background: #e0e0e0; border-radius: 10px; height: 8px; margin: 12px 0;">
-                            <div style="background: #2B7FDD; width: ${percent}%; height: 8px; border-radius: 10px;"></div>
-                        </div>
-                        <div style="font-size: 12px; margin-bottom: 16px;">${checked}/${items.length} itens concluídos (${percent}%)</div>
-                        ${items.map(item => `
-                            <div class="checklist-item">
-                                <input type="checkbox" ${item.is_checked ? 'checked' : ''} onchange="toggleChecklist('${item.id}', ${item.is_checked})">
-                                <div style="flex: 1;">
-                                    <strong>${item.item}</strong>
-                                </div>
+            <div id="checklists-container">
+                ${Object.entries(grouped).map(([area, items]) => {
+                    const checked = items.filter(i => i.is_checked).length;
+                    const percent = items.length > 0 ? (checked / items.length * 100).toFixed(0) : 0;
+                    return `
+                        <div class="card">
+                            <h3>🎯 ${area.toUpperCase()}</h3>
+                            <div style="background: #e0e0e0; border-radius: 10px; height: 8px; margin: 12px 0;">
+                                <div style="background: #2B7FDD; width: ${percent}%; height: 8px; border-radius: 10px;"></div>
                             </div>
-                        `).join('')}
-                    </div>
-                `;
-            }).join('')}
+                            <div style="font-size: 12px; margin-bottom: 16px;">${checked}/${items.length} itens concluídos (${percent}%)</div>
+                            ${items.map(item => `
+                                <div class="checklist-item">
+                                    <input type="checkbox" data-checklist-id="${item.id}" data-checked="${item.is_checked}" ${item.is_checked ? 'checked' : ''}>
+                                    <div style="flex: 1;">
+                                        <strong>${item.item}</strong>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
         `;
     }
 
@@ -922,23 +928,25 @@
         return `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <button onclick="changeView('dash')">← Voltar</button>
+                    <button class="back-to-dash">← Voltar</button>
                     <h1 style="display: inline-block; margin-left: 16px;">💾 Data Lake</h1>
                 </div>
-                <button onclick="createIndicator()">➕ Novo Indicador</button>
+                <button class="create-indicator-btn">➕ Novo Indicador</button>
             </div>
             
             <div class="card">
                 <h3>📊 Indicadores Cadastrados</h3>
-                ${indicators.map(ind => `
-                    <div class="task-item">
-                        <strong>${ind.indicator_name}</strong>
-                        <div style="font-size: 12px; color: #666;">
-                            Página: ${ind.page || 'N/A'} | Planilha: ${ind.spreadsheet_lake || 'N/A'}
+                <div id="indicators-list">
+                    ${indicators.map(ind => `
+                        <div class="task-item">
+                            <strong>${ind.indicator_name}</strong>
+                            <div style="font-size: 12px; color: #666;">
+                                Página: ${ind.page || 'N/A'} | Planilha: ${ind.spreadsheet_lake || 'N/A'}
+                            </div>
                         </div>
-                    </div>
-                `).join('')}
-                ${indicators.length === 0 ? '<p>Nenhum indicador cadastrado ainda.</p>' : ''}
+                    `).join('')}
+                    ${indicators.length === 0 ? '<p>Nenhum indicador cadastrado ainda.</p>' : ''}
+                </div>
             </div>
         `;
     }
@@ -951,7 +959,10 @@
         });
         
         return `
-            <h1 style="margin-bottom: 24px;">👥 Equipe SEGAPE</h1>
+            <div style="margin-bottom: 20px;">
+                <button class="back-to-dash">← Voltar</button>
+                <h1 style="display: inline-block; margin-left: 16px;">👥 Equipe SEGAPE</h1>
+            </div>
             
             ${Object.entries(grouped).map(([area, team]) => `
                 <div class="card">
@@ -970,8 +981,24 @@
     }
 
     // ============================================
-    // CONTROLE DE VIEWS
+    // CONTROLE DE VIEWS E EVENTOS
     // ============================================
+
+    function changeView(view) {
+        currentView = view;
+        
+        // Update nav active state
+        document.querySelectorAll('.nav div').forEach((el, index) => {
+            const views = ['dash', 'projects', 'checklist', 'datalake', 'team'];
+            if (views[index] === view) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+        
+        render();
+    }
 
     function showVersionSelector() {
         currentVersion = null;
@@ -1029,39 +1056,33 @@
         render();
     }
 
-    function changeView(view) {
-        currentView = view;
-        document.querySelectorAll('.nav div').forEach(el => {
-            el.classList.remove('active');
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+
+    function attachEventListeners() {
+        // Back buttons
+        document.querySelectorAll('.back-to-dash').forEach(btn => {
+            btn.addEventListener('click', () => changeView('dash'));
         });
-        const navItem = document.getElementById(`nav-${view}`);
-        if (navItem) navItem.classList.add('active');
-        render();
-    }
-
-    // ============================================
-    // RENDER PRINCIPAL
-    // ============================================
-
-    async function render() {
-        const el = document.getElementById('main');
-        if (!el) return;
         
-        if (currentView === 'dash') {
-            el.innerHTML = renderDashboard();
-        } else if (currentView === 'projects') {
-            el.innerHTML = renderProjectView();
-        } else if (currentView === 'checklist') {
-            el.innerHTML = renderChecklistView();
-        } else if (currentView === 'datalake') {
-            el.innerHTML = renderDataLakeView();
-        } else if (currentView === 'team') {
-            el.innerHTML = renderTeamView();
-        }
-    }
-
-    // ============================================
-    // INICIALIZAÇÃO
-    // ============================================
-
-    async function init()
+        // Project cards in dashboard
+        document.querySelectorAll('[data-project-id]').forEach(card => {
+            card.addEventListener('click', () => {
+                const projectId = card.getAttribute('data-project-id');
+                selectProject(projectId);
+            });
+        });
+        
+        // Version selection
+        document.querySelectorAll('[data-version-id]').forEach(version => {
+            version.addEventListener('click', () => {
+                const versionId = version.getAttribute('data-version-id');
+                selectVersion(versionId);
+            });
+        });
+        
+        // Create version button
+        const createVersionBtn = document.querySelector('.create-version-btn');
+        if (createVersionBtn) {
+            createVersionBtn
