@@ -35,7 +35,10 @@
   --shl:0 8px 30px rgba(0,0,0,.16);
 }
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  /* prevent double-tap zoom globally on mobile */
+  touch-action:manipulation;
+}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -2304,12 +2307,7 @@ switchTab=function(tab){
    MOBILE — Touch enhancements
 ═══════════════════════════════════════════════ */
 
-/* Prevent double-tap zoom on buttons */
-document.querySelectorAll('button,.fp,.si,.bn-item,.chk-item,.tc').forEach(el=>{
-  el.addEventListener('touchend',e=>{e.preventDefault();el.click();},{passive:false});
-});
-
-/* Swipe right to open sidebar, swipe left to close */
+/* Swipe right from left edge to open sidebar, swipe left to close */
 (()=>{
   let tx0=0,ty0=0;
   document.addEventListener('touchstart',e=>{
@@ -2318,9 +2316,9 @@ document.querySelectorAll('button,.fp,.si,.bn-item,.chk-item,.tc').forEach(el=>{
   document.addEventListener('touchend',e=>{
     const dx=e.changedTouches[0].clientX-tx0;
     const dy=Math.abs(e.changedTouches[0].clientY-ty0);
-    if(dy>40)return; // mostly vertical swipe, ignore
-    if(dx>60&&tx0<30&&isMobile())openSidebar();  // swipe right from left edge
-    if(dx<-60&&isMobile())closeSidebar();        // swipe left to close
+    if(dy>40)return;
+    if(dx>60&&tx0<30&&isMobile())openSidebar();
+    if(dx<-60&&isMobile())closeSidebar();
   },{passive:true});
 })();
 
