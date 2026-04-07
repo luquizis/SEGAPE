@@ -597,9 +597,21 @@ tr:hover td{background:var(--surf2)}
 /* ═══════════════════════════════════════════════
    SUPABASE — nova URL
 ═══════════════════════════════════════════════ */
+/*
+  =====================================================================
+  PASSO OBRIGATÓRIO — substitua o valor abaixo pela sua anon key real:
+  1. Acesse https://app.supabase.com
+  2. Selecione o projeto  ujneiupcuqiqkkltgvkv
+  3. Vá em Settings → API
+  4. Copie o valor de "anon public" (começa com eyJhbGci...)
+  5. Cole aqui substituindo COLE_SUA_ANON_KEY_AQUI
+  =====================================================================
+*/
+const SUPA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0';
+
 const SB = window.supabase.createClient(
   'https://ujneiupcuqiqkkltgvkv.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NTI4MzgsImV4cCI6MjA1OTUyODgzOH0.dummy_key_replace_me'
+  SUPA_ANON_KEY
 );
 /* ── CONFIGURAÇÃO NECESSÁRIA NO SUPABASE ──────────────────────────────
    1. Substitua "dummy_key_replace_me" pela anon key real:
@@ -831,12 +843,26 @@ async function doSaveAll(){
 async function bootApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('shell').classList.remove('hide');
+
+  /* Validação rápida da chave antes de qualquer query */
+  if(!SUPA_ANON_KEY||SUPA_ANON_KEY==='COLE_SUA_ANON_KEY_AQUI'){
+    hideLd();
+    document.getElementById('login-screen').style.display='flex';
+    showLoginScreen('ls-login');
+    loginErr('li-err','⚠️ Chave Supabase não configurada. Abra o index.html e substitua COLE_SUA_ANON_KEY_AQUI pela chave real do projeto.');
+    return;
+  }
+
   showLd('Conectando ao banco…');
   try{
     [G.projects,G.members]=await Promise.all([dbQ('projects'),dbQ('members')]);
-    // pendências globais
-    const {data:pd}=await SB.from('global_pendencies').select('*').catch(()=>({data:[]}));
-    G.pendencies=pd||[];
+
+    /* pendências globais — view pode não existir, trata silenciosamente */
+    try{
+      const {data:pd}=await SB.from('global_pendencies').select('*');
+      G.pendencies=pd||[];
+    }catch(e){ G.pendencies=[]; }
+
     if(!G.proj&&G.projects.length)G.proj=G.projects[0].id;
     if(G.proj){
       showLd('Carregando projeto…');
@@ -847,10 +873,28 @@ async function bootApp(){
       if(G.versions.length&&(!G.ver||!G.versions.find(v=>v.id===G.ver)))
         G.ver=G.versions[0].id;
     }
-  }catch(e){console.error('Boot',e);}
+  }catch(e){
+    console.error('Boot error:',e);
+    /* Se 401, pode ser chave errada — mostra mensagem útil */
+    if(e.message&&(e.message.includes('401')||e.message.includes('Invalid API key'))){
+      hideLd();
+      document.getElementById('login-screen').style.display='flex';
+      loginErr('li-err','Chave Supabase inválida (401). Verifique SUPA_ANON_KEY no código.');
+      return;
+    }
+  }
   hideLd();
   renderSB();
   switchTab(G.proj?G.tab:'dash');
+  /* carrega PDF da versão ativa se existir */
+  if(G.proj){
+    const cv=G.versions.find(v=>v.id===G.ver);
+    if(cv?.pdf_url){
+      await loadPDFFromUrl(cv.pdf_url);
+    }else{
+      showDZ();
+    }
+  }
 }
 
 /* Verificar sessão existente ao carregar */
@@ -991,8 +1035,10 @@ async function selectProj(id){
 async function refreshAll(){
   G.projects=await dbQ('projects');
   G.members=await dbQ('members');
-  const {data:pd}=await SB.from('global_pendencies').select('*').catch(()=>({data:[]}));
-  G.pendencies=pd||[];
+  try{
+    const {data:pd}=await SB.from('global_pendencies').select('*');
+    G.pendencies=pd||[];
+  }catch(e){ G.pendencies=[]; }
   if(G.proj){
     G.tasks=await dbQ('tasks',{project_id:G.proj});
     G.versions=await dbQ('project_versions',{project_id:G.proj});
@@ -1974,4 +2020,3 @@ function fmtDate(iso){
 
 </body>
 </html>
-
