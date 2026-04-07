@@ -67,6 +67,34 @@ body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;
 .login-btn:hover{background:#178a63;transform:translateY(-1px)}
 .login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .login-footer{margin-top:18px;text-align:center;font-size:11px;color:var(--ink3)}
+.login-links{display:flex;justify-content:space-between;margin-top:12px}
+.login-link{font-size:12px;color:var(--g);cursor:pointer;background:none;border:none;padding:0;font-family:var(--fb);text-decoration:underline;text-underline-offset:2px}
+.login-link:hover{color:#178a63}
+.login-ok{background:#E0F5EE;color:#0D6040;border:1px solid #7AD4AC;border-radius:var(--r8);padding:10px 12px;font-size:12px;margin-bottom:14px;display:none}
+.login-screen-inner{display:none}
+.login-screen-inner.active{display:block}
+.login-back{font-size:12px;color:var(--ink3);cursor:pointer;background:none;border:none;padding:0;font-family:var(--fb);margin-bottom:16px;display:flex;align-items:center;gap:4px}
+.login-back:hover{color:var(--ink)}
+/* save badge */
+#save-badge{
+  display:none;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;font-family:var(--fm);
+  cursor:pointer;border:none;transition:all .15s;
+}
+#save-badge.dirty{
+  display:inline-flex;
+  background:#FFFBEB;color:#92400E;
+  border:1px solid #FCD34D;
+  animation:pulse 1.5s infinite;
+}
+#save-badge.saved{
+  display:inline-flex;
+  background:#E0F5EE;color:#0D6040;
+  border:1px solid #7AD4AC;
+  animation:none;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(252,211,77,.5)}50%{box-shadow:0 0 0 4px rgba(252,211,77,0)}}
 
 /* ── SHELL ── */
 #shell{display:flex;height:100vh;overflow:hidden}
@@ -418,13 +446,48 @@ tr:hover td{background:var(--surf2)}
         <p>MEC · Publicações Estratégicas</p>
       </div>
     </div>
-    <div class="login-title">Entrar no sistema</div>
-    <div class="login-sub">Use seu e-mail e senha cadastrados pela equipe SEGAPE</div>
-    <div class="lf"><label>E-mail</label><input type="email" id="li-email" placeholder="seu@email.gov.br" autocomplete="username"></div>
-    <div class="lf"><label>Senha</label><input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password"></div>
-    <div class="login-err" id="li-err"></div>
-    <button class="login-btn" id="li-btn" onclick="doLogin()">Entrar</button>
-    <div class="login-footer">Problemas de acesso? Fale com a equipe de TI da SEGAPE.</div>
+
+    <!-- ENTRAR -->
+    <div class="login-screen-inner active" id="ls-login">
+      <div class="login-title">Entrar no sistema</div>
+      <div class="login-sub">Use seu e-mail e senha cadastrados pela equipe SEGAPE</div>
+      <div class="login-err" id="li-err"></div>
+      <div class="login-ok"  id="li-ok"></div>
+      <div class="lf"><label>E-mail</label><input type="email" id="li-email" placeholder="seu@email.gov.br" autocomplete="username"></div>
+      <div class="lf"><label>Senha</label><input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="login-btn" id="li-btn" onclick="doLogin()">Entrar</button>
+      <div class="login-links">
+        <button class="login-link" onclick="showLoginScreen('ls-recover')">Esqueci minha senha</button>
+        <button class="login-link" onclick="showLoginScreen('ls-register')">Criar conta</button>
+      </div>
+      <div class="login-footer">Acesso restrito à equipe SEGAPE/MEC</div>
+    </div>
+
+    <!-- RECUPERAR SENHA -->
+    <div class="login-screen-inner" id="ls-recover">
+      <button class="login-back" onclick="showLoginScreen('ls-login')">← Voltar para o login</button>
+      <div class="login-title">Recuperar senha</div>
+      <div class="login-sub">Enviaremos um link de redefinição para o seu e-mail</div>
+      <div class="login-err" id="rec-err"></div>
+      <div class="login-ok"  id="rec-ok"></div>
+      <div class="lf"><label>E-mail</label><input type="email" id="rec-email" placeholder="seu@email.gov.br"></div>
+      <button class="login-btn" id="rec-btn" onclick="doRecover()">Enviar link de redefinição</button>
+    </div>
+
+    <!-- CADASTRAR -->
+    <div class="login-screen-inner" id="ls-register">
+      <button class="login-back" onclick="showLoginScreen('ls-login')">← Voltar para o login</button>
+      <div class="login-title">Criar conta</div>
+      <div class="login-sub">Após o cadastro, aguarde a aprovação de um administrador SEGAPE</div>
+      <div class="login-err" id="reg-err"></div>
+      <div class="login-ok"  id="reg-ok"></div>
+      <div class="lf"><label>Nome completo</label><input type="text" id="reg-name" placeholder="Seu nome"></div>
+      <div class="lf"><label>E-mail institucional</label><input type="email" id="reg-email" placeholder="seu@email.gov.br"></div>
+      <div class="lf"><label>Senha (mínimo 8 caracteres)</label><input type="password" id="reg-pass" placeholder="••••••••" autocomplete="new-password"></div>
+      <div class="lf"><label>Confirmar senha</label><input type="password" id="reg-pass2" placeholder="••••••••" autocomplete="new-password"></div>
+      <button class="login-btn" id="reg-btn" onclick="doRegister()">Criar minha conta</button>
+    </div>
+
   </div>
 </div>
 
@@ -459,6 +522,7 @@ tr:hover td{background:var(--surf2)}
     <div class="tb-ti"><span id="tb-title">Dashboard</span><small id="tb-sub"></small></div>
     <div class="tb-ver" id="tb-ver" onclick="toggleVerMenu()" style="display:none">— · versão</div>
     <div class="tb-tabs" id="tb-tabs"></div>
+    <button id="save-badge" onclick="doSaveAll()" title="Salvar alterações pendentes"></button>
     <button class="btn sm" id="btn-upload" style="display:none" onclick="triggerUpload()">⬆ PDF</button>
     <input type="file" id="fi" accept="application/pdf" style="display:none">
   </div>
@@ -535,10 +599,21 @@ tr:hover td{background:var(--surf2)}
 ═══════════════════════════════════════════════ */
 const SB = window.supabase.createClient(
   'https://ujneiupcuqiqkkltgvkv.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NTI4MzgsImV4cCI6MjA1OTUyODgzOH0.dummy_key_replace_me'
 );
-/* ATENÇÃO: Substitua a anon key acima pela chave real do novo projeto Supabase.
-   Encontre em: https://app.supabase.com → seu projeto → Settings → API → anon key */
+/* ── CONFIGURAÇÃO NECESSÁRIA NO SUPABASE ──────────────────────────────
+   1. Substitua "dummy_key_replace_me" pela anon key real:
+      Supabase → Settings → API → anon public
+   2. Crie o bucket de PDFs (Storage → New bucket):
+      Nome: pdfs | Public: SIM
+      Ou execute no SQL Editor:
+        INSERT INTO storage.buckets (id, name, public)
+        VALUES ('pdfs', 'pdfs', true)
+        ON CONFLICT DO NOTHING;
+   3. Política de acesso ao bucket (SQL Editor):
+        CREATE POLICY "allow_all_pdfs" ON storage.objects
+        FOR ALL USING (bucket_id = 'pdfs');
+   ───────────────────────────────────────────────────────────────── */
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -604,34 +679,150 @@ async function dbDel(table,id){
 /* ═══════════════════════════════════════════════
    AUTH
 ═══════════════════════════════════════════════ */
+/* ── Login screen switcher ── */
+function showLoginScreen(id){
+  document.querySelectorAll('.login-screen-inner').forEach(el=>el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // limpa erros e oks ao trocar de tela
+  document.querySelectorAll('.login-err,.login-ok').forEach(el=>{el.style.display='none';el.textContent='';});
+}
+function loginErr(elId,msg){const e=document.getElementById(elId);e.textContent=msg;e.style.display='block';}
+function loginOk(elId,msg){const e=document.getElementById(elId);e.textContent=msg;e.style.display='block';}
+
+/* ── Entrar ── */
 async function doLogin(){
   const email=document.getElementById('li-email').value.trim();
   const pass=document.getElementById('li-pass').value;
-  const err=document.getElementById('li-err');
   const btn=document.getElementById('li-btn');
-  if(!email||!pass){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
-  btn.disabled=true;btn.textContent='Entrando…';err.style.display='none';
+  document.getElementById('li-err').style.display='none';
+  document.getElementById('li-ok').style.display='none';
+  if(!email||!pass){loginErr('li-err','Preencha e-mail e senha.');return;}
+  btn.disabled=true;btn.textContent='Entrando…';
   try{
     const {data,error}=await SB.auth.signInWithPassword({email,password:pass});
     if(error)throw error;
     G.user=data.user;
     await bootApp();
   }catch(e){
-    err.textContent=e.message==='Invalid login credentials'
-      ?'E-mail ou senha incorretos. Verifique seus dados.'
-      :'Erro de conexão: '+e.message;
-    err.style.display='block';
+    const msg=e.message||'';
+    if(msg.includes('Invalid login credentials'))
+      loginErr('li-err','E-mail ou senha incorretos. Verifique seus dados.');
+    else if(msg.includes('Email not confirmed'))
+      loginErr('li-err','Confirme o e-mail clicando no link que enviamos antes de entrar.');
+    else if(msg.includes('fetch')||msg.includes('Failed'))
+      loginErr('li-err','Erro de conexão com o servidor. Verifique a chave Supabase no código.');
+    else
+      loginErr('li-err','Erro: '+msg);
   }
   btn.disabled=false;btn.textContent='Entrar';
 }
-
 document.getElementById('li-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
+/* ── Recuperar senha ── */
+async function doRecover(){
+  const email=document.getElementById('rec-email').value.trim();
+  const btn=document.getElementById('rec-btn');
+  document.getElementById('rec-err').style.display='none';
+  document.getElementById('rec-ok').style.display='none';
+  if(!email){loginErr('rec-err','Informe o e-mail.');return;}
+  btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    const {error}=await SB.auth.resetPasswordForEmail(email,{
+      redirectTo: window.location.href,
+    });
+    if(error)throw error;
+    loginOk('rec-ok','✅ Link enviado! Verifique sua caixa de entrada (e spam).');
+  }catch(e){
+    loginErr('rec-err','Erro: '+(e.message||'Não foi possível enviar o e-mail.'));
+  }
+  btn.disabled=false;btn.textContent='Enviar link de redefinição';
+}
+
+/* ── Cadastrar novo usuário ── */
+async function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  const btn=document.getElementById('reg-btn');
+  document.getElementById('reg-err').style.display='none';
+  document.getElementById('reg-ok').style.display='none';
+  if(!name)        {loginErr('reg-err','Informe seu nome.');return;}
+  if(!email)       {loginErr('reg-err','Informe o e-mail.');return;}
+  if(pass.length<8){loginErr('reg-err','A senha precisa ter pelo menos 8 caracteres.');return;}
+  if(pass!==pass2) {loginErr('reg-err','As senhas não coincidem.');return;}
+  btn.disabled=true;btn.textContent='Criando conta…';
+  try{
+    const {data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+    if(error)throw error;
+    if(data.user&&!data.session){
+      // Supabase enviou e-mail de confirmação
+      loginOk('reg-ok','✅ Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
+    }else if(data.session){
+      // confirmação automática desativada no projeto — entra direto
+      G.user=data.user;
+      await bootApp();
+      return;
+    }
+  }catch(e){
+    const msg=e.message||'';
+    if(msg.includes('already registered'))
+      loginErr('reg-err','Este e-mail já está cadastrado. Use "Esqueci minha senha" se necessário.');
+    else
+      loginErr('reg-err','Erro: '+msg);
+  }
+  btn.disabled=false;btn.textContent='Criar minha conta';
+}
+
+/* ── Sair ── */
 async function doLogout(){
   await SB.auth.signOut();
   G.user=null;
+  clearDirty();
   document.getElementById('shell').classList.add('hide');
   document.getElementById('login-screen').style.display='flex';
+  showLoginScreen('ls-login');
+}
+
+/* ═══════════════════════════════════════════════
+   SAVE BADGE — controle de estado "sujo"
+═══════════════════════════════════════════════ */
+let _pendingSaves={}; // {id: {table, id, fields}}
+let _saveTimer=null;
+
+function markDirty(key,table,id,fields){
+  /* acumula alterações para salvar em lote */
+  _pendingSaves[key]={table,id,fields};
+  const badge=document.getElementById('save-badge');
+  badge.className='dirty';
+  badge.textContent='● Salvar alterações';
+  badge.style.display='inline-flex';
+  /* autosave após 30 s de inatividade */
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(doSaveAll,30000);
+}
+
+function clearDirty(){
+  _pendingSaves={};clearTimeout(_saveTimer);
+  const badge=document.getElementById('save-badge');
+  badge.className='saved';badge.textContent='✓ Salvo';
+  badge.style.display='inline-flex';
+  setTimeout(()=>{badge.style.display='none';badge.className='';},2500);
+}
+
+async function doSaveAll(){
+  if(!Object.keys(_pendingSaves).length){clearDirty();return;}
+  showLd('Salvando…');
+  try{
+    const ops=Object.values(_pendingSaves);
+    for(const op of ops){
+      await SB.from(op.table).update(op.fields).eq('id',op.id);
+    }
+    clearDirty();
+  }catch(e){
+    alert('Erro ao salvar: '+e.message);
+  }
+  hideLd();
 }
 
 /* ═══════════════════════════════════════════════
@@ -788,6 +979,13 @@ async function selectProj(id){
   if(G.versions.length)G.ver=G.versions[0].id;
   hideLd();sS();
   switchTab('rev');
+  /* se a versão ativa tiver PDF salvo, carrega automaticamente */
+  const curVer=G.versions.find(v=>v.id===G.ver);
+  if(curVer?.pdf_url){
+    await loadPDFFromUrl(curVer.pdf_url);
+  }else{
+    showDZ();
+  }
 }
 
 async function refreshAll(){
@@ -942,7 +1140,46 @@ async function loadPDF(file){
     const doc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
     PDF.doc=doc;PDF.pages=doc.numPages;PDF.curr=1;PDF.proj=G.proj;PDF.ver=G.ver;
     showVP();await renderPages();updPI();renderPins();renderTaskList();
+
+    /* Upload para Supabase Storage e salva URL na versão */
+    try{
+      const path=`${G.proj}/${G.ver||'sem-versao'}/${Date.now()}_${file.name}`;
+      const {error:upErr}=await SB.storage.from('pdfs').upload(path,file,{upsert:true,contentType:'application/pdf'});
+      if(!upErr){
+        const {data:urlData}=SB.storage.from('pdfs').getPublicUrl(path);
+        const pubUrl=urlData?.publicUrl;
+        if(pubUrl&&G.ver){
+          await SB.from('project_versions').update({pdf_url:pubUrl}).eq('id',G.ver);
+          /* atualiza cache local */
+          const v=G.versions.find(x=>x.id===G.ver);
+          if(v)v.pdf_url=pubUrl;
+          renderSB();
+        }
+      }else{
+        console.warn('Storage upload falhou (bucket "pdfs" pode não existir):',upErr.message);
+        /* continua — PDF funciona localmente mesmo sem upload */
+      }
+    }catch(stErr){console.warn('Storage:',stErr);}
+
   }catch(e){alert('Não foi possível abrir o PDF. Verifique se não está protegido por senha.');}
+  hideLd();
+}
+
+/* Carrega PDF a partir de URL pública (Supabase Storage) */
+async function loadPDFFromUrl(url){
+  if(!url)return;
+  showLd('Carregando PDF da versão…');
+  try{
+    const resp=await fetch(url);
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const buf=await resp.arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+    PDF.doc=doc;PDF.pages=doc.numPages;PDF.curr=1;PDF.proj=G.proj;PDF.ver=G.ver;
+    showVP();await renderPages();updPI();renderPins();renderTaskList();
+  }catch(e){
+    console.warn('Não foi possível carregar PDF da URL:',e.message);
+    /* não bloqueia o sistema — drop-zone permanece disponível */
+  }
   hideLd();
 }
 
@@ -1310,8 +1547,16 @@ function toggleVerMenu(){
     <div class="vm-meta" style="color:var(--g)">Nova versão…</div>
   </div>`;
   menu.innerHTML=h;tb.appendChild(menu);
-  menu.querySelectorAll('[data-vid]').forEach(el=>el.addEventListener('click',()=>{
+  menu.querySelectorAll('[data-vid]').forEach(el=>el.addEventListener('click',async()=>{
     G.ver=el.dataset.vid;sS();menu.remove();renderSB();renderTaskList();renderPins();
+    /* carrega PDF salvo da versão selecionada */
+    const selVer=G.versions.find(v=>v.id===G.ver);
+    if(selVer?.pdf_url){
+      PDF.doc=null;PDF.proj=null;
+      await loadPDFFromUrl(selVer.pdf_url);
+    }else{
+      PDF.doc=null;PDF.proj=null;showDZ();
+    }
   }));
   setTimeout(()=>{document.addEventListener('click',function oc(e){if(!menu.contains(e.target)){menu.remove();document.removeEventListener('click',oc);}},{once:true,capture:true});},80);
 }
