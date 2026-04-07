@@ -1,798 +1,1538 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SEGAPE - Gestão de Projetos</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEGAPE Tracker | MEC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS — SEGAPE / MEC
+   Verde #1D9E75 · Azul #1351B4 · Amarelo #FFCD07 · Vermelho #E52207
+═══════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --fh:'Raleway',sans-serif;
+  --fb:'Source Sans 3',sans-serif;
+  --fm:'DM Mono',monospace;
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  --g:#1D9E75; --b:#1351B4; --y:#FFCD07; --r:#E52207;
 
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f3f4f6; color: #111; }
-    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
-    .sidebar { background: #111827; color: #fff; padding: 20px; }
-    .sidebar h2 { margin-bottom: 8px; }
-    .sidebar p { font-size: 13px; opacity: .85; margin-bottom: 14px; }
-    .nav button {
-      display: block; width: 100%; margin-bottom: 8px; padding: 10px;
-      border: none; border-radius: 8px; background: #1f2937; color: #fff; cursor: pointer; text-align: left;
-    }
-    .nav button.active { background: #2563eb; }
-    .logout { margin-top: 12px; background: #dc2626 !important; }
+  --bg:#F0EFEB; --surf:#FFF; --surf2:#F8F7F4;
+  --brd:#DDDBD5; --brd2:#C4C1BA;
+  --ink:#1C1916; --ink2:#5C5850; --ink3:#9B9690;
 
-    .main { padding: 20px; }
-    .card {
-      background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.08);
-    }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    input, select {
-      padding: 10px; border: 1px solid #ddd; border-radius: 8px; min-width: 220px;
-    }
-    button.action {
-      padding: 10px 14px; border: none; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer;
-    }
-    button.secondary { background: #6b7280; }
+  --cd:#4B3F9E; --bgd:#EEEDFB;
+  --cf:#0D6B4F; --bgf:#E0F5EE;
+  --cb:#7A4500; --bgb:#FDF0DC;
+  --ca:#8A2A1A; --bga:#FAECE7;
+  --ct:#14548A; --bgt:#E4F1FA;
+  --cs:#444240; --bgs:#EFEDE8;
+  --cv:#8A2252; --bgv:#FAE8F2;
 
-    .list-item {
-      padding: 10px; border: 1px solid #ececec; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
-    }
-    .list-item:hover { background: #f9fafb; }
+  --done:#1D9E75; --blk:#E52207; --doing:#1351B4; --wait:#A8A39C;
 
-    .muted { color: #6b7280; font-size: 13px; }
-    .ok { color: #16a34a; }
-    .err { color: #dc2626; }
+  --sbw:230px; --tbh:52px; --panw:360px;
+  --r4:4px; --r8:8px; --r12:12px; --r16:16px;
+  --sh:0 1px 3px rgba(0,0,0,.09),0 4px 14px rgba(0,0,0,.07);
+  --shl:0 8px 28px rgba(0,0,0,.16);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+::-webkit-scrollbar-track{background:transparent}
+.hide{display:none!important}
 
-    #pdf-container { margin-top: 12px; display: flex; flex-direction: column; gap: 16px; align-items: start; }
-    .pdf-page { position: relative; box-shadow: 0 2px 10px rgba(0,0,0,.2); background: #fff; cursor: crosshair; }
-    .pin {
-      position: absolute; width: 16px; height: 16px; background: #ef4444;
-      border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%);
-      box-shadow: 0 1px 4px rgba(0,0,0,.25);
-    }
-    .pin.done { background: #22c55e; }
+/* ── Shell ── */
+#shell{display:flex;height:100vh;overflow:hidden}
 
-    .hidden { display: none; }
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════ */
+#sb{width:var(--sbw);min-width:var(--sbw);background:var(--surf);border-right:1px solid var(--brd);display:flex;flex-direction:column;z-index:30;overflow:hidden}
+.sb-top{padding:14px 14px 12px;border-bottom:3px solid var(--g);background:var(--ink);flex-shrink:0}
+.sb-top-row{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.sb-mark{width:26px;height:26px;background:var(--g);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-nm{font-family:var(--fh);font-size:13px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.sb-sub{font-size:9px;color:rgba(255,255,255,.4);font-family:var(--fm);letter-spacing:.04em}
 
-    @media (max-width: 900px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar { position: sticky; top: 0; z-index: 2; }
-    }
-  </style>
+.sb-sc{flex:1;overflow-y:auto;padding:4px 6px 10px}
+.sb-sc::-webkit-scrollbar{width:3px}
+
+.sb-lbl{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);padding:9px 8px 3px;display:flex;align-items:center;justify-content:space-between}
+.sb-lbl button{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:15px;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .1s;line-height:1}
+.sb-lbl button:hover{background:var(--bg);color:var(--ink)}
+
+.si{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r4);cursor:pointer;transition:background .1s;margin-bottom:1px;position:relative;border-left:2px solid transparent}
+.si:hover{background:var(--bg)}
+.si.on{background:var(--bg);border-left-color:var(--pc,var(--ink))}
+.si .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.si .sn{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si .sr{font-size:9px;color:var(--ink3);white-space:nowrap}
+.si .bx{font-size:9px;font-family:var(--fm);background:#FBDADA;color:#8A2020;padding:1px 5px;border-radius:10px;font-weight:600}
+.si .dx{opacity:0;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;padding:1px 3px;border-radius:3px;transition:opacity .1s}
+.si:hover .dx{opacity:.4}
+.si .dx:hover{opacity:1!important;background:rgba(0,0,0,.08)}
+.sdv{height:1px;background:var(--brd);margin:5px 7px}
+
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-family:var(--fh)}
+.sb-ft{border-top:1px solid var(--brd);padding:9px 11px;background:var(--surf2);flex-shrink:0}
+.me-pill{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--bg);border-radius:var(--r4);cursor:pointer;border:1px solid var(--brd);transition:background .1s}
+.me-pill:hover{background:var(--brd)}
+.me-pill .mi{flex:1;min-width:0}
+.me-pill .mn{font-size:12px;font-weight:600}
+.me-pill .mr{font-size:10px;color:var(--ink3)}
+.me-hint{font-size:9px;color:var(--ink3);font-family:var(--fm)}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN
+═══════════════════════════════════════════════════════ */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+#tb{height:var(--tbh);background:var(--surf);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 18px;gap:10px;flex-shrink:0;z-index:20;position:relative}
+.tb-stripe{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--g) 0%,var(--b) 50%,var(--y) 75%,var(--r) 100%)}
+.tb-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:2px}
+.tb-ti{font-family:var(--fh);font-size:14px;font-weight:700;letter-spacing:-.2px;flex:1;min-width:0}
+.tb-ti small{font-family:var(--fb);font-size:11px;font-weight:400;color:var(--ink3);display:block;margin-top:-1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-ver{font-family:var(--fm);font-size:10px;color:var(--ink3);background:var(--bg);border:1px solid var(--brd);padding:3px 9px;border-radius:20px;white-space:nowrap;cursor:pointer}
+.tb-ver:hover{border-color:var(--brd2)}
+.tb-tabs{display:flex;margin:0 4px}
+.tb-tab{padding:6px 11px;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;transition:all .12s;margin-bottom:-1px;white-space:nowrap}
+.tb-tab:hover{color:var(--ink)}
+.tb-tab.on{color:var(--g);border-bottom-color:var(--g)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 13px;border-radius:var(--r4);font-size:12px;font-weight:600;font-family:var(--fb);cursor:pointer;border:1px solid var(--brd2);background:var(--surf);color:var(--ink);transition:all .1s;white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.g{background:var(--g);color:#fff;border-color:var(--g)}.btn.g:hover{background:#178a63}
+.btn.b{background:var(--b);color:#fff;border-color:var(--b)}.btn.b:hover{background:#0f3f8f}
+.btn.gh{background:transparent;border-color:transparent;color:var(--ink3)}.btn.gh:hover{background:var(--bg);color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:11px}
+.btn.danger{background:#FBDADA;color:#8A2020;border-color:#F0A0A0}.btn.danger:hover{background:#F0A0A0}
+
+/* ═══════════════════════════════════════════════════════
+   CONTENT
+═══════════════════════════════════════════════════════ */
+#content{flex:1;display:flex;overflow:hidden}
+
+/* Loading */
+#ld{position:fixed;inset:0;background:rgba(28,25,22,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px}
+#ld .spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite}
+#ld p{color:#fff;font-family:var(--fm);font-size:12px;opacity:.7}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: REVISÃO PDF
+═══════════════════════════════════════════════════════ */
+#v-rev{display:flex;flex:1;overflow:hidden}
+
+#pdf-pane{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--brd)}
+.pdf-bar{height:40px;background:var(--surf);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 13px;gap:7px;flex-shrink:0}
+.pnb{background:none;border:1px solid var(--brd);border-radius:var(--r4);padding:3px 8px;cursor:pointer;font-size:11px;color:var(--ink2);font-family:var(--fb);transition:all .1s}
+.pnb:hover:not(:disabled){background:var(--bg)}
+.pnb:disabled{opacity:.3;cursor:default}
+.pbi{font-size:10px;font-family:var(--fm);color:var(--ink3)}
+.pbsp{width:1px;height:16px;background:var(--brd);margin:0 3px}
+.pbht{font-size:10px;color:var(--ink3);font-style:italic}
+
+#dz{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);cursor:pointer;border:2px dashed var(--brd2);margin:18px;border-radius:var(--r16);transition:all .15s}
+#dz:hover,#dz.drag{border-color:var(--g);background:rgba(29,158,117,.05)}
+#dz .dzi{font-size:36px;opacity:.28}
+#dz .dzt{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--ink2)}
+#dz .dzs{font-size:11px;color:var(--ink3);text-align:center;line-height:1.6}
+
+#pdf-vp{flex:1;overflow:auto;padding:20px 0;background:#4A4845;display:flex;flex-direction:column;align-items:center;gap:14px}
+#pdf-vp::-webkit-scrollbar{width:5px}
+#pdf-vp::-webkit-scrollbar-thumb{background:#888;border-radius:3px}
+
+.page-wrap{position:relative;display:inline-block;box-shadow:0 4px 22px rgba(0,0,0,.45);border-radius:2px;cursor:crosshair}
+.page-wrap canvas{display:block;border-radius:2px}
+.pg-lbl{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:9px;font-family:var(--fm);color:rgba(255,255,255,.44);white-space:nowrap}
+
+/* Pin */
+.pin{position:absolute;width:23px;height:23px;border-radius:50% 50% 50% 0;transform:rotate(-45deg) translate(-50%,-100%);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid rgba(255,255,255,.8);box-shadow:0 2px 10px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s;z-index:6}
+.pin:hover{transform:rotate(-45deg) translate(-50%,-100%) scale(1.2);box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.pin.obs-pin{border-style:dashed}
+.pin.done-pin{filter:saturate(.2);opacity:.55}
+.pin-n{transform:rotate(45deg);font-size:9px;font-weight:700;font-family:var(--fm);color:#fff;line-height:1}
+
+/* Comment popup */
+#cpop{position:absolute;z-index:200;background:var(--surf);border:1px solid var(--brd2);border-radius:var(--r12);box-shadow:var(--shl);width:308px;animation:fadeUp .13s ease}
+@keyframes fadeUp{from{opacity:0;transform:scale(.95) translateY(5px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.cp-h{padding:11px 13px 9px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:7px}
+.cp-badge{font-size:9px;font-family:var(--fm);font-weight:600;padding:2px 7px;border-radius:10px;background:var(--g);color:#fff}
+.cp-badge.obs{background:var(--y);color:var(--ink)}
+.cp-title{font-family:var(--fh);font-size:12px;font-weight:700;flex:1}
+.cp-x{background:none;border:none;cursor:pointer;font-size:14px;color:var(--ink3);padding:0 2px;line-height:1}.cp-x:hover{color:var(--ink)}
+.cp-b{padding:11px 13px;display:flex;flex-direction:column;gap:9px}
+.fl{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:3px}
+.fc{width:100%;border:1px solid var(--brd2);border-radius:var(--r4);padding:6px 8px;font-size:12px;background:var(--surf2);color:var(--ink);font-family:var(--fb);outline:none;transition:border-color .12s}
+.fc:focus{border-color:var(--g);background:var(--surf)}
+textarea.fc{resize:vertical;min-height:60px;line-height:1.5}
+.p2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cp-f{padding:9px 13px;border-top:1px solid var(--brd);display:flex;gap:5px;justify-content:flex-end;background:var(--surf2);border-radius:0 0 var(--r12) var(--r12)}
+.cp-sh{font-size:9px;color:var(--ink3);margin-right:auto;align-self:center;font-family:var(--fm)}
+
+/* ═══════════════════════════════════════════════════════
+   PAINEL DE TAREFAS
+═══════════════════════════════════════════════════════ */
+#task-pan{width:var(--panw);min-width:var(--panw);background:var(--surf);display:flex;flex-direction:column;overflow:hidden}
+.tp-h{padding:12px 14px 10px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.tp-h h3{font-family:var(--fh);font-size:13px;font-weight:700;flex:1}
+.tpst{font-size:10px;font-family:var(--fm);padding:2px 7px;border-radius:10px;border:1px solid}
+.tpst.op{background:#FBDADA;color:#8A2020;border-color:#F0A0A0}
+.tpst.dk{background:#E0F5EE;color:#0D6040;border-color:#7AD4AC}
+
+.tpf{padding:7px 10px;border-bottom:1px solid var(--brd);display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
+.fp{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;border:1px solid var(--brd);color:var(--ink3);background:var(--surf);transition:all .1s;font-family:var(--fb);font-weight:500}
+.fp:hover{border-color:var(--brd2);color:var(--ink)}
+.fp.on{background:var(--ink);color:var(--surf);border-color:var(--ink)}
+
+.tpl{flex:1;overflow-y:auto;padding:9px 10px 14px}
+.tpl::-webkit-scrollbar{width:3px}
+
+.es{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 12px;gap:7px;text-align:center}
+.es .ei{font-size:26px;opacity:.18}
+.es .et{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--ink2)}
+.es .sub{font-size:11px;color:var(--ink3);line-height:1.6;max-width:200px}
+
+/* Task card */
+.tc{border-radius:var(--r8);padding:9px 11px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;cursor:pointer;position:relative;border:1px solid transparent;border-left:3px solid transparent;transition:border-color .12s,box-shadow .12s}
+.tc:hover{border-color:rgba(0,0,0,.1);box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.tc.t-d{background:var(--bgd);border-left-color:var(--cd)}
+.tc.t-f{background:var(--bgf);border-left-color:var(--cf)}
+.tc.t-b{background:var(--bgb);border-left-color:var(--cb)}
+.tc.t-a{background:var(--bga);border-left-color:var(--ca)}
+.tc.t-t{background:var(--bgt);border-left-color:var(--ct)}
+.tc.t-s{background:var(--bgs);border-left-color:var(--cs)}
+.tc.t-v{background:var(--bgv);border-left-color:var(--cv)}
+.tc.t-o{background:#FFFDF0;border-left-color:var(--y);border-left-style:dashed}
+.tc.done-tc{opacity:.42}
+
+.chk{width:14px;height:14px;border-radius:3px;border:1.5px solid;cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.t-d .chk{border-color:var(--cd);color:var(--cd)}
+.t-f .chk{border-color:var(--cf);color:var(--cf)}
+.t-b .chk{border-color:var(--cb);color:var(--cb)}
+.t-a .chk{border-color:var(--ca);color:var(--ca)}
+.t-t .chk{border-color:var(--ct);color:var(--ct)}
+.t-s .chk{border-color:var(--cs);color:var(--cs)}
+.t-v .chk{border-color:var(--cv);color:var(--cv)}
+.t-o .chk{border-color:#C09000;color:#C09000}
+.chk.ck{background:currentColor}
+.chk.ck::after{content:'';display:block;width:3px;height:6px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg);margin-top:-1px;margin-left:1px}
+
+.pin-n2{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--fm);color:#fff;flex-shrink:0;margin-top:2px}
+
+.tc-b{flex:1;min-width:0}
+.tc-t{font-size:12px;line-height:1.4;font-weight:500}
+.t-d .tc-t{color:#1E1660}.t-f .tc-t{color:#072E20}.t-b .tc-t{color:#3C2005}.t-a .tc-t{color:#3A1008}.t-t .tc-t{color:#071E38}.t-s .tc-t{color:#1C1A18}.t-v .tc-t{color:#3A0820}.t-o .tc-t{color:#4A3A00}
+.tc-t.ds{text-decoration:line-through;opacity:.45}
+
+.tc-note{font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.45;font-style:italic;padding-left:8px;border-left:2px solid rgba(0,0,0,.1)}
+.tc-m{display:flex;gap:5px;align-items:center;margin-top:4px;flex-wrap:wrap}
+.tcw{font-size:10px;font-family:var(--fm);opacity:.7}
+.t-d .tcw{color:var(--cd)}.t-f .tcw{color:var(--cf)}.t-b .tcw{color:var(--cb)}.t-a .tcw{color:var(--ca)}.t-t .tcw{color:var(--ct)}.t-s .tcw{color:var(--cs)}.t-v .tcw{color:var(--cv)}.t-o .tcw{color:#855C00}
+.tcd{font-size:9px;font-family:var(--fm);padding:1px 5px;border-radius:8px;border:1px solid;opacity:.75}
+.t-d .tcd{color:var(--cd);border-color:var(--cd)}.t-f .tcd{color:var(--cf);border-color:var(--cf)}.t-b .tcd{color:var(--cb);border-color:var(--cb)}.t-a .tcd{color:var(--ca);border-color:var(--ca)}.t-t .tcd{color:var(--ct);border-color:var(--ct)}.t-s .tcd{color:var(--cs);border-color:var(--cs)}.t-v .tcd{color:var(--cv);border-color:var(--cv)}.t-o .tcd{color:#855C00;border-color:#855C00}
+.tcd.ov{color:var(--blk);border-color:var(--blk);opacity:1;font-weight:700}
+.tcp{font-size:9px;color:var(--ink3);font-family:var(--fm);background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.tctag{font-size:9px;color:var(--ink3);border:1px solid var(--brd);padding:1px 5px;border-radius:8px}
+
+.tc-acts{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap}
+.ab{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;border:1px solid var(--brd);background:var(--surf);color:var(--ink2);font-family:var(--fb);transition:all .1s}
+.ab:hover{background:var(--bg);border-color:var(--brd2);color:var(--ink)}
+.ab.done-ab{background:#E0F5EE;color:#0D6040;border-color:#7AD4AC}
+.ab.note-ab{background:var(--bgt);color:var(--ct);border-color:var(--ct)}
+
+.tc-del{opacity:0;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;padding:2px 4px;border-radius:3px;position:absolute;top:7px;right:7px;transition:opacity .1s;line-height:1}
+.tc:hover .tc-del{opacity:.4}
+.tc-del:hover{opacity:1!important;background:rgba(0,0,0,.08)}
+
+.note-form{margin-top:7px;display:flex;gap:5px;animation:fadeUp .12s ease}
+.note-form textarea{flex:1;border:1px solid var(--brd2);border-radius:var(--r4);padding:6px 8px;font-size:11px;font-family:var(--fb);color:var(--ink);background:var(--surf);outline:none;resize:none;min-height:50px;transition:border-color .12s}
+.note-form textarea:focus{border-color:var(--b)}
+.nfbtns{display:flex;flex-direction:column;gap:3px}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: VERSÕES
+═══════════════════════════════════════════════════════ */
+#v-ver{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+#v-ver>*{width:100%;max-width:800px}
+
+.vcur{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r16);padding:18px 22px;border-top:4px solid var(--g)}
+.vcl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g);margin-bottom:5px}
+.vch{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.vbdg{font-family:var(--fm);font-size:20px;font-weight:500;color:var(--ink);min-width:50px}
+.vcm{flex:1}
+.vcm .vmd{font-size:12px;color:var(--ink2);margin-bottom:2px}
+.vcm .vmn{font-size:12px;color:var(--ink);line-height:1.55}
+.vcsts{display:flex;gap:12px}
+.vcst{text-align:right}
+.vcst .sv{font-size:20px;font-weight:700;font-family:var(--fm);color:var(--ink)}
+.vcst .sl{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+
+.hist-box{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r16);overflow:hidden}
+.hist-hd{padding:13px 16px;border-bottom:1px solid var(--brd);font-family:var(--fh);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.hcnt{font-size:10px;font-family:var(--fm);color:var(--ink3);background:var(--bg);border:1px solid var(--brd);padding:2px 8px;border-radius:10px}
+.he{border-bottom:1px solid var(--brd)}
+.he:last-child{border-bottom:none}
+.her{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;transition:background .1s}
+.her:hover{background:var(--surf2)}
+.hvtag{font-family:var(--fm);font-size:12px;font-weight:500;min-width:42px;color:var(--ink)}
+.hmeta{flex:1;font-size:11px;color:var(--ink2)}
+.hmeta strong{color:var(--ink);font-weight:600}
+.hts{display:flex;gap:4px}
+.htsp{font-size:9px;font-family:var(--fm);padding:2px 7px;border-radius:10px}
+.htog{font-size:10px;color:var(--ink3);font-family:var(--fm)}
+.hbdy{padding:0 16px 12px;background:var(--surf2)}
+.hti{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:var(--r4);margin-bottom:3px;font-size:11px;border-left:3px solid var(--brd2)}
+.hti.htd{border-left-color:var(--done);background:rgba(29,158,117,.05);color:var(--ink2)}
+.hti.hto{border-left-color:var(--blk);background:rgba(229,34,7,.04);color:var(--ink2)}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: CHECKLIST
+═══════════════════════════════════════════════════════ */
+#v-chk{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+#v-chk>*{width:100%;max-width:820px}
+
+.chk-sec{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r16);overflow:hidden}
+.chk-sec-hd{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px}
+.chk-sec-hd h3{font-family:var(--fh);font-size:13px;font-weight:700;flex:1}
+.chk-prog{font-size:10px;font-family:var(--fm);color:var(--ink3)}
+.prog-bar{height:3px;background:var(--brd);border-radius:2px;overflow:hidden;margin:0 16px 12px}
+.prog-fill{height:100%;border-radius:2px;background:var(--g);transition:width .3s}
+.chk-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--brd);transition:background .1s;cursor:pointer}
+.chk-item:last-child{border-bottom:none}
+.chk-item:hover{background:var(--surf2)}
+.ci-box{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--brd2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.ci-box.ck{background:var(--g);border-color:var(--g)}
+.ci-box.ck::after{content:'';display:block;width:4px;height:7px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg);margin-top:-2px;margin-left:1px}
+.ci-txt{flex:1;font-size:12px}
+.ci-who{font-size:10px;color:var(--ink3);font-family:var(--fm);white-space:nowrap}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: INDICADORES
+═══════════════════════════════════════════════════════ */
+#v-ind{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+#v-ind>*{width:100%;max-width:960px}
+
+.ind-wrap{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r16);overflow:hidden}
+.ind-hd{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;font-family:var(--fh);font-size:13px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 12px;border-bottom:1px solid var(--brd);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);background:var(--surf2)}
+td{padding:10px 12px;border-bottom:1px solid var(--brd);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surf2)}
+.ist{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.ist.ok{background:#E0F5EE;color:#0D6040}
+.ist.rev{background:#FBDADA;color:#8A2020}
+
+.ind-form{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r16);padding:16px 20px}
+.ind-form h4{font-family:var(--fh);font-size:13px;font-weight:700;margin-bottom:12px}
+.ind-grid{display:grid;grid-template-columns:70px 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: CONFIGURAÇÕES
+═══════════════════════════════════════════════════════ */
+#v-cfg{flex:1;overflow-y:auto;padding:20px;max-width:780px}
+.cfg-sec{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r16);margin-bottom:14px;overflow:hidden}
+.cfg-hd{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.cfg-hd h3{font-family:var(--fh);font-size:13px;font-weight:700}
+.cfg-bd{padding:12px 16px}
+.pr{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--brd)}
+.pr:last-child{border-bottom:none}
+.pr-inf{flex:1}.pr-nm{font-size:13px;font-weight:600}.pr-rl{font-size:11px;color:var(--ink3)}
+.ptag{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--brd)}
+
+/* ═══════════════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════════════ */
+.mo-back{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:500}
+.mo{background:var(--surf);border-radius:var(--r16);box-shadow:var(--shl);width:480px;max-width:93%;max-height:88vh;overflow-y:auto;animation:fadeUp .14s ease}
+.mo-h{padding:15px 18px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:9px}
+.mo-h h2{font-family:var(--fh);font-size:15px;font-weight:700;flex:1}
+.mo-b{padding:16px 18px}
+.mo-f{padding:10px 18px;border-top:1px solid var(--brd);display:flex;gap:7px;justify-content:flex-end;background:var(--surf2);border-radius:0 0 var(--r16) var(--r16)}
+.mfg{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.mfg label{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+.mfg input,.mfg select,.mfg textarea{border:1px solid var(--brd2);border-radius:var(--r4);padding:7px 9px;font-size:13px;background:var(--surf2);color:var(--ink);font-family:var(--fb);outline:none;transition:border-color .12s;width:100%}
+.mfg input:focus,.mfg select:focus,.mfg textarea:focus{border-color:var(--g);background:var(--surf)}
+.mfg textarea{resize:vertical;min-height:58px;line-height:1.5}
+.m2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sw-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+.sw{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .1s}
+.sw:hover{transform:scale(1.15)}
+.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ink)}
+
+/* Version selector in topbar */
+.ver-menu{position:absolute;top:var(--tbh);right:0;background:var(--surf);border:1px solid var(--brd2);border-radius:var(--r8);box-shadow:var(--sh);min-width:280px;z-index:100;animation:fadeUp .12s ease}
+.vm-item{display:flex;align-items:center;gap:8px;padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--brd);transition:background .1s}
+.vm-item:last-child{border-bottom:none}
+.vm-item:hover{background:var(--surf2)}
+.vm-item .vm-tag{font-family:var(--fm);font-size:11px;min-width:44px;color:var(--ink)}
+.vm-item .vm-meta{flex:1;font-size:11px;color:var(--ink2)}
+.vm-item .vm-sel{font-size:9px;color:var(--g);font-family:var(--fm)}
+</style>
 </head>
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <h2>📊 SEGAPE</h2>
-    <p id="user-label">Não autenticado</p>
+<div id="shell">
 
-    <div class="nav">
-      <button id="nav-auth" class="active">🔐 Login</button>
-      <button id="nav-dash">📈 Dashboard</button>
-      <button id="nav-project">📁 Projeto Atual</button>
-      <button id="nav-checklist">✅ Checklist</button>
-      <button id="nav-indicators">💾 Indicadores</button>
-      <button id="btn-logout" class="logout hidden">Sair</button>
+<!-- ═══ SIDEBAR ═══ -->
+<div id="sb">
+  <div class="sb-top">
+    <div class="sb-top-row">
+      <div class="sb-mark">S</div>
+      <div class="sb-nm">SEGAPE Tracker</div>
     </div>
-  </aside>
-
-  <main class="main">
-    <!-- AUTH -->
-    <section id="view-auth" class="card">
-      <h3>Login por e-mail</h3>
-      <div class="row" style="margin-top:10px;">
-        <input id="auth-email" type="email" placeholder="seu@email.com" />
-        <input id="auth-password" type="password" placeholder="senha (mín. 6)" />
-        <button class="action" id="btn-signup">Criar conta</button>
-        <button class="action secondary" id="btn-login">Entrar</button>
+    <div class="sb-sub">MEC · publicações estratégicas</div>
+  </div>
+  <div class="sb-sc" id="sb-sc"></div>
+  <div class="sb-ft">
+    <div class="me-pill" id="me-pill">
+      <div class="av" id="me-av" style="width:26px;height:26px;font-size:10px"></div>
+      <div class="mi">
+        <div class="mn" id="me-nm">—</div>
+        <div class="mr" id="me-rl">—</div>
       </div>
-      <p id="auth-msg" class="muted" style="margin-top:10px;">Aguardando...</p>
-    </section>
+      <div class="me-hint">trocar →</div>
+    </div>
+  </div>
+</div>
 
-    <!-- DASHBOARD -->
-    <section id="view-dash" class="card hidden">
-      <h3>Projetos</h3>
-      <div class="row" style="margin: 10px 0;">
-        <input id="new-project-id" placeholder="id projeto (ex: atm)" />
-        <input id="new-project-name" placeholder="nome projeto" />
-        <input id="new-project-color" placeholder="#2B7FDD" />
-        <button class="action" id="btn-create-project">Criar projeto</button>
-      </div>
-      <div id="projects-list"></div>
-    </section>
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+  <div id="tb">
+    <div class="tb-stripe"></div>
+    <div class="tb-dot" id="tb-dot"></div>
+    <div class="tb-ti">
+      <span id="tb-title">Selecione um projeto</span>
+      <small id="tb-sub"></small>
+    </div>
+    <div class="tb-ver" id="tb-ver" onclick="toggleVerMenu()">— · versão</div>
+    <div class="tb-tabs" id="tb-tabs">
+      <div class="tb-tab on" data-tab="rev">Revisão PDF</div>
+      <div class="tb-tab" data-tab="ver">Versões</div>
+      <div class="tb-tab" data-tab="chk">Checklist</div>
+      <div class="tb-tab" data-tab="ind">Indicadores</div>
+    </div>
+    <button class="btn sm" onclick="triggerUpload()">⬆ PDF</button>
+    <input type="file" id="fi" accept="application/pdf" style="display:none">
+  </div>
 
-    <!-- PROJETO -->
-    <section id="view-project" class="card hidden">
-      <h3>Projeto atual: <span id="current-project-label">-</span></h3>
-
-      <div class="card" style="margin-top:12px;">
-        <h4>Versões</h4>
-        <div class="row" style="margin-top:10px;">
-          <input id="new-version-tag" placeholder="ex: v1.0" />
-          <button class="action" id="btn-create-version">Nova versão</button>
+  <div id="content">
+    <!-- Revisão PDF -->
+    <div id="v-rev">
+      <div id="pdf-pane">
+        <div class="pdf-bar" id="pdf-bar" style="display:none">
+          <button class="pnb" id="bprev">←</button>
+          <span class="pbi" id="pinfo">1/1</span>
+          <button class="pnb" id="bnext">→</button>
+          <div class="pbsp"></div>
+          <button class="pnb" id="bzout">−</button>
+          <span class="pbi" id="pzoom">135%</span>
+          <button class="pnb" id="bzin">+</button>
+          <div class="pbsp"></div>
+          <span class="pbht">Clique no PDF para comentar · Ctrl+Enter para salvar</span>
         </div>
-        <div id="versions-list" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="card">
-        <h4>PDF da versão atual: <span id="current-version-label">-</span></h4>
-        <div class="row" style="margin-top:10px;">
-          <input id="pdf-upload" type="file" accept=".pdf" />
-          <button class="action secondary" id="btn-reload-pdf">Recarregar PDF</button>
+        <div id="dz" onclick="triggerUpload()">
+          <div class="dzi">📄</div>
+          <div class="dzt">Carregar PDF para revisão</div>
+          <div class="dzs">Clique aqui ou arraste o arquivo<br>Após carregar, clique em qualquer ponto para criar tarefas</div>
         </div>
-        <p class="muted" style="margin-top:8px;">Clique no PDF para criar tarefa (pin).</p>
-        <div id="pdf-container"></div>
+        <div id="pdf-vp"></div>
       </div>
-
-      <div class="card">
-        <h4>Tarefas da versão</h4>
-        <div id="tasks-list"></div>
+      <div id="task-pan">
+        <div class="tp-h">
+          <h3>Tarefas</h3>
+          <div style="display:flex;gap:5px">
+            <div class="tpst op" id="st-open">0 abertas</div>
+            <div class="tpst dk" id="st-done">0 ok</div>
+          </div>
+        </div>
+        <div class="tpf" id="tpf">
+          <div class="fp on" data-f="all">Todas</div>
+          <div class="fp" data-f="tarefa">🔴 Tarefa</div>
+          <div class="fp" data-f="observacao">🟡 Obs.</div>
+          <div class="fp" data-f="design">Design</div>
+          <div class="fp" data-f="front">Front</div>
+          <div class="fp" data-f="back">Back</div>
+          <div class="fp" data-f="dados">Dados</div>
+          <div class="fp" data-f="texto">Texto</div>
+          <div class="fp" data-f="sup">Sup.</div>
+          <div class="fp" data-f="aprov">Aprov.</div>
+        </div>
+        <div class="tpl" id="tpl"></div>
       </div>
-    </section>
+    </div>
+    <!-- Versões -->
+    <div id="v-ver" class="hide"></div>
+    <!-- Checklist -->
+    <div id="v-chk" class="hide"></div>
+    <!-- Indicadores -->
+    <div id="v-ind" class="hide"></div>
+    <!-- Configurações -->
+    <div id="v-cfg" class="hide"></div>
+  </div>
+</div>
+</div>
 
-    <!-- CHECKLIST -->
-    <section id="view-checklist" class="card hidden">
-      <h3>Checklist do projeto atual</h3>
-      <p class="muted">Projeto: <span id="checklist-project-label">-</span></p>
-      <div id="checklist-list" style="margin-top:10px;"></div>
-    </section>
+<!-- Loading -->
+<div id="ld" class="hide"><div class="spin"></div><p id="ld-msg">Carregando…</p></div>
 
-    <!-- INDICATORS -->
-    <section id="view-indicators" class="card hidden">
-      <h3>Indicadores (Data Lake)</h3>
-      <p class="muted">Projeto: <span id="indicator-project-label">-</span></p>
-      <div class="row" style="margin-top:10px;">
-        <input id="indicator-name" placeholder="Nome do indicador" />
-        <input id="indicator-page" placeholder="Página (número)" />
-        <input id="indicator-sheet" placeholder="Planilha/Data lake" />
-        <button class="action" id="btn-add-indicator">Adicionar</button>
-      </div>
-      <div id="indicators-list" style="margin-top:10px;"></div>
-    </section>
-  </main>
+<!-- Modal -->
+<div class="mo-back hide" id="mo-back">
+  <div class="mo">
+    <div class="mo-h"><h2 id="mo-title">—</h2><button class="btn gh sm" onclick="closeMo()">✕</button></div>
+    <div class="mo-b" id="mo-body"></div>
+    <div class="mo-f" id="mo-foot"></div>
+  </div>
 </div>
 
 <script>
-  // =========================
-  // CONFIG
-  // =========================
-  const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
-  const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_PUBLICA';
+/* ═══════════════════════════════════════════════════════
+   SUPABASE
+═══════════════════════════════════════════════════════ */
+const SB = window.supabase.createClient(
+  'https://zvfwjuooztjeuokesfek.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00'
+);
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+/* ═══════════════════════════════════════════════════════
+   SESSION (só preferências UI — dados vêm do Supabase)
+═══════════════════════════════════════════════════════ */
+const SK = 'segape-v9-session';
+function lS(){ try{return JSON.parse(localStorage.getItem(SK))||{};}catch(e){return{};} }
+function sS(){ localStorage.setItem(SK,JSON.stringify({me:UI.me,proj:UI.proj,tab:UI.tab,filt:UI.filt,scale:UI.scale,ver:UI.ver})); }
 
-  // =========================
-  // STATE
-  // =========================
-  let session = null;
-  let projects = [];
-  let versions = [];
-  let tasks = [];
-  let checklists = [];
-  let indicators = [];
-  let currentProjectId = null;
-  let currentVersionId = null;
-  let currentPdfUrl = null;
-  let pdfDoc = null;
+const _s = lS();
+const UI = {
+  me:    _s.me    || '',
+  proj:  _s.proj  || null,
+  tab:   _s.tab   || 'rev',
+  filt:  _s.filt  || 'all',
+  scale: _s.scale || 1.35,
+  ver:   _s.ver   || null,  // UUID da versão ativa
+  // cache DB
+  projects:[],members:[],tasks:[],versions:[],checklists:[],indicators:[],
+};
 
-  // =========================
-  // ELEMENTS
-  // =========================
-  const el = {
-    userLabel: document.getElementById('user-label'),
-    authMsg: document.getElementById('auth-msg'),
+/* ═══════════════════════════════════════════════════════
+   CONSTANTES
+═══════════════════════════════════════════════════════ */
+const AL = {design:'Design',front:'Frontend',back:'Backend',dados:'Dados',texto:'Correção',sup:'Supervisão',aprov:'Aprovação'};
+const AC = {design:'#4B3F9E',front:'#0D6B4F',back:'#7A4500',dados:'#8A2A1A',texto:'#14548A',sup:'#444240',aprov:'#8A2252'};
+const ACSS={design:'t-d',front:'t-f',back:'t-b',dados:'t-a',texto:'t-t',sup:'t-s',aprov:'t-v'};
+const SWATCHES=['#1D9E75','#1351B4','#E52207','#C07A10','#8A2252','#7A4500','#0D6B4F','#4B3F9E','#6A1B9A'];
+const ATYPES = ['design','front','back','dados','texto','sup','aprov'];
 
-    navAuth: document.getElementById('nav-auth'),
-    navDash: document.getElementById('nav-dash'),
-    navProject: document.getElementById('nav-project'),
-    navChecklist: document.getElementById('nav-checklist'),
-    navIndicators: document.getElementById('nav-indicators'),
-    btnLogout: document.getElementById('btn-logout'),
+/* PDF state */
+let PDF = {doc:null,pages:0,curr:1,proj:null,ver:null};
 
-    viewAuth: document.getElementById('view-auth'),
-    viewDash: document.getElementById('view-dash'),
-    viewProject: document.getElementById('view-project'),
-    viewChecklist: document.getElementById('view-checklist'),
-    viewIndicators: document.getElementById('view-indicators'),
+/* ═══════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════ */
+function showLd(m='Carregando…'){document.getElementById('ld').classList.remove('hide');document.getElementById('ld-msg').textContent=m;}
+function hideLd(){document.getElementById('ld').classList.add('hide');}
 
-    authEmail: document.getElementById('auth-email'),
-    authPassword: document.getElementById('auth-password'),
-    btnSignup: document.getElementById('btn-signup'),
-    btnLogin: document.getElementById('btn-login'),
+/* ═══════════════════════════════════════════════════════
+   DB HELPERS
+═══════════════════════════════════════════════════════ */
+async function dbQ(table,filters={}){
+  let q = SB.from(table).select('*');
+  Object.entries(filters).forEach(([k,v])=>{ q=q.eq(k,v); });
+  const {data,error}=await q;
+  if(error){console.error(table,error);}
+  return data||[];
+}
+async function dbIns(table,row){ const {data,error}=await SB.from(table).insert([row]).select().single(); if(error)throw error; return data; }
+async function dbUpd(table,id,fields){ const {error}=await SB.from(table).update(fields).eq('id',id); if(error)throw error; }
+async function dbDel(table,id){ const {error}=await SB.from(table).delete().eq('id',id); if(error)throw error; }
 
-    newProjectId: document.getElementById('new-project-id'),
-    newProjectName: document.getElementById('new-project-name'),
-    newProjectColor: document.getElementById('new-project-color'),
-    btnCreateProject: document.getElementById('btn-create-project'),
-    projectsList: document.getElementById('projects-list'),
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════ */
+function renderSB(){
+  const el=document.getElementById('sb-sc');
+  let h='';
 
-    currentProjectLabel: document.getElementById('current-project-label'),
-    checklistProjectLabel: document.getElementById('checklist-project-label'),
-    indicatorProjectLabel: document.getElementById('indicator-project-label'),
+  h+=`<div class="sb-lbl">Projetos <button onclick="openNewProjMo()" title="Novo projeto">＋</button></div>`;
+  UI.projects.forEach(p=>{
+    const n=UI.tasks.filter(t=>t.project_id===p.id&&!t.is_done).length;
+    h+=`<div class="si${UI.proj===p.id?' on':''}" data-proj="${p.id}" style="--pc:${p.color}">
+      <div class="dot" style="background:${p.color}"></div>
+      <div class="sn">${p.name}</div>
+      ${n?`<div class="bx">${n}</div>`:''}
+      <button class="dx" data-dp="${p.id}" title="Remover">✕</button>
+    </div>`;
+  });
 
-    newVersionTag: document.getElementById('new-version-tag'),
-    btnCreateVersion: document.getElementById('btn-create-version'),
-    versionsList: document.getElementById('versions-list'),
-    currentVersionLabel: document.getElementById('current-version-label'),
+  h+=`<div class="sdv"></div>`;
+  h+=`<div class="sb-lbl">Equipe <button onclick="openNewMemberMo()" title="Novo membro">＋</button></div>`;
+  UI.members.forEach(m=>{
+    const mine=UI.tasks.filter(t=>t.responsible===m.name&&!t.is_done).length;
+    h+=`<div class="si${UI.me===m.name?' on':''}" data-who="${m.name}" style="--pc:${m.color}">
+      <div class="av" style="width:18px;height:18px;font-size:7px;background:${m.bg};color:${m.color}">${m.name.slice(0,2)}</div>
+      <div class="sn">${m.name}</div>
+      <div class="sr">${m.area||''}</div>
+      ${mine?`<div class="bx">${mine}</div>`:''}
+      <button class="dx" data-dm="${m.name}" title="Remover">✕</button>
+    </div>`;
+  });
 
-    pdfUpload: document.getElementById('pdf-upload'),
-    btnReloadPdf: document.getElementById('btn-reload-pdf'),
-    pdfContainer: document.getElementById('pdf-container'),
+  h+=`<div class="sdv"></div>`;
+  h+=`<div class="si${UI.tab==='cfg'?' on':''}" data-tab-link="cfg"><div class="dot" style="background:var(--ink3)"></div><div class="sn">Configurações</div></div>`;
 
-    tasksList: document.getElementById('tasks-list'),
+  el.innerHTML=h;
 
-    checklistList: document.getElementById('checklist-list'),
+  /* me pill */
+  const m=UI.members.find(x=>x.name===UI.me)||{bg:'#EFEDE8',color:'#444240',role:'',area:''};
+  const av=document.getElementById('me-av');
+  Object.assign(av.style,{background:m.bg,color:m.color,width:'26px',height:'26px',fontSize:'10px'});
+  av.textContent=(UI.me||'?').slice(0,2);
+  document.getElementById('me-nm').textContent=UI.me||'Selecione';
+  document.getElementById('me-rl').textContent=m.role||m.area||'—';
 
-    indicatorName: document.getElementById('indicator-name'),
-    indicatorPage: document.getElementById('indicator-page'),
-    indicatorSheet: document.getElementById('indicator-sheet'),
-    btnAddIndicator: document.getElementById('btn-add-indicator'),
-    indicatorsList: document.getElementById('indicators-list'),
-  };
+  /* topbar */
+  const p=UI.projects.find(x=>x.id===UI.proj);
+  document.getElementById('tb-dot').style.background=p?.color||'#888';
+  document.getElementById('tb-title').textContent=p?.name||'Selecione um projeto';
+  document.getElementById('tb-sub').textContent=p?.demandante?`Demandante: ${p.demandante}`:'';
 
-  // =========================
-  // HELPERS
-  // =========================
-  function setAuthMsg(msg, isError = false) {
-    el.authMsg.textContent = msg;
-    el.authMsg.className = isError ? 'err' : 'ok';
+  const curVer=UI.versions.find(v=>v.id===UI.ver);
+  document.getElementById('tb-ver').textContent=curVer?`${curVer.version_tag} · ${fmtDate(curVer.created_at?.split('T')[0])}`:'— · versão';
+
+  document.querySelectorAll('.tb-tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===UI.tab));
+
+  attachSBEv();
+}
+
+function attachSBEv(){
+  document.querySelectorAll('[data-proj]').forEach(el=>el.addEventListener('click',e=>{
+    if(e.target.closest('[data-dp]'))return;
+    selectProj(el.dataset.proj);
+  }));
+  document.querySelectorAll('[data-dp]').forEach(el=>el.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const id=el.dataset.dp;
+    const p=UI.projects.find(x=>x.id===id);
+    if(!confirm(`Remover "${p?.name}"? Todas as tarefas, versões e checklists serão perdidos.`))return;
+    showLd('Removendo…');
+    await dbDel('projects',id);
+    if(UI.proj===id){UI.proj=null;UI.ver=null;}
+    await refreshAll();
+    hideLd();
+  }));
+  document.querySelectorAll('[data-who]').forEach(el=>el.addEventListener('click',e=>{
+    if(e.target.closest('[data-dm]'))return;
+    UI.me=el.dataset.who;sS();renderSB();
+  }));
+  document.querySelectorAll('[data-dm]').forEach(el=>el.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const name=el.dataset.dm;
+    if(!confirm(`Remover "${name}" da equipe? (Isso remove do banco)`))return;
+    showLd('Removendo…');
+    const m=UI.members.find(x=>x.name===name);
+    if(m){await dbDel('members',m.id);}
+    if(UI.me===name)UI.me='';
+    UI.members=await dbQ('members');
+    hideLd();sS();renderSB();
+  }));
+  document.querySelectorAll('[data-tab-link]').forEach(el=>el.addEventListener('click',()=>switchTab(el.dataset.tabLink)));
+  document.getElementById('me-pill').addEventListener('click',openMeSwitchMo);
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROJECT SELECT & REFRESH
+═══════════════════════════════════════════════════════ */
+async function selectProj(id){
+  UI.proj=id;UI.tab='rev';UI.filt='all';
+  PDF.doc=null;PDF.proj=null;PDF.pages=0;PDF.curr=1;
+  showLd('Carregando projeto…');
+  UI.tasks=await dbQ('tasks',{project_id:id});
+  UI.versions=await dbQ('project_versions',{project_id:id});
+  // versão mais recente por padrão
+  if(UI.versions.length) UI.ver=UI.versions[0].id;
+  else UI.ver=null;
+  sS();hideLd();
+  showDZ();switchTab('rev');
+}
+
+async function refreshAll(){
+  UI.projects=await dbQ('projects');
+  UI.members=await dbQ('members');
+  if(UI.proj){
+    UI.tasks=await dbQ('tasks',{project_id:UI.proj});
+    UI.versions=await dbQ('project_versions',{project_id:UI.proj});
+    if(UI.versions.length&&!UI.ver)UI.ver=UI.versions[0].id;
   }
+  renderSB();renderTaskList();
+}
 
-  function setActiveNav(btn) {
-    [el.navAuth, el.navDash, el.navProject, el.navChecklist, el.navIndicators].forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
+/* ═══════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════ */
+function switchTab(tab){
+  UI.tab=tab;
+  ['rev','ver','chk','ind','cfg'].forEach(v=>{
+    const el=document.getElementById('v-'+v);
+    if(el)el.classList.toggle('hide',v!==tab);
+  });
+  if(tab==='ver')renderVerView();
+  if(tab==='chk')renderChkView();
+  if(tab==='ind')renderIndView();
+  if(tab==='cfg')renderCfgView();
+  sS();renderSB();
+}
+document.getElementById('tb-tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tb-tab');
+  if(t)switchTab(t.dataset.tab);
+});
 
-  function showView(name) {
-    el.viewAuth.classList.add('hidden');
-    el.viewDash.classList.add('hidden');
-    el.viewProject.classList.add('hidden');
-    el.viewChecklist.classList.add('hidden');
-    el.viewIndicators.classList.add('hidden');
-
-    if (name === 'auth') el.viewAuth.classList.remove('hidden');
-    if (name === 'dash') el.viewDash.classList.remove('hidden');
-    if (name === 'project') el.viewProject.classList.remove('hidden');
-    if (name === 'checklist') el.viewChecklist.classList.remove('hidden');
-    if (name === 'indicators') el.viewIndicators.classList.remove('hidden');
-  }
-
-  function requireLogin() {
-    if (!session) {
-      alert('Faça login primeiro.');
-      setActiveNav(el.navAuth);
-      showView('auth');
-      return false;
-    }
-    return true;
-  }
-
-  // =========================
-  // AUTH
-  // =========================
-  async function doSignUp() {
-    const email = el.authEmail.value.trim();
-    const password = el.authPassword.value.trim();
-    if (!email || !password) return setAuthMsg('Informe e-mail e senha.', true);
-
-    const { error } = await sb.auth.signUp({ email, password });
-    if (error) return setAuthMsg(error.message, true);
-    setAuthMsg('Conta criada. Verifique o e-mail (se confirmação estiver ativa).');
-  }
-
-  async function doLogin() {
-    const email = el.authEmail.value.trim();
-    const password = el.authPassword.value.trim();
-    if (!email || !password) return setAuthMsg('Informe e-mail e senha.', true);
-
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) return setAuthMsg(error.message, true);
-
-    await refreshSession();
-    setAuthMsg('Login realizado com sucesso.');
-    await loadProjects();
-    setActiveNav(el.navDash);
-    showView('dash');
-  }
-
-  async function doLogout() {
-    await sb.auth.signOut();
-    await refreshSession();
-    setActiveNav(el.navAuth);
-    showView('auth');
-  }
-
-  async function refreshSession() {
-    const { data } = await sb.auth.getSession();
-    session = data.session || null;
-
-    if (session?.user) {
-      el.userLabel.textContent = `👤 ${session.user.email}`;
-      el.btnLogout.classList.remove('hidden');
-    } else {
-      el.userLabel.textContent = 'Não autenticado';
-      el.btnLogout.classList.add('hidden');
-    }
-  }
-
-  // =========================
-  // PROJECTS
-  // =========================
-  async function loadProjects() {
-    if (!requireLogin()) return;
-    const { data, error } = await sb.from('projects').select('*').order('name');
-    if (error) return alert('Erro projetos: ' + error.message);
-
-    projects = data || [];
-    renderProjects();
-  }
-
-  function renderProjects() {
-    if (projects.length === 0) {
-      el.projectsList.innerHTML = `<p class="muted">Nenhum projeto.</p>`;
-      return;
-    }
-
-    el.projectsList.innerHTML = projects.map(p => `
-      <div class="list-item" data-project-id="${p.id}">
-        <strong>${p.name}</strong> <span class="muted">(${p.id})</span>
-      </div>
-    `).join('');
-
-    document.querySelectorAll('[data-project-id]').forEach(item => {
-      item.addEventListener('click', async () => {
-        currentProjectId = item.getAttribute('data-project-id');
-        currentVersionId = null;
-        currentPdfUrl = null;
-        el.currentProjectLabel.textContent = currentProjectId;
-        el.checklistProjectLabel.textContent = currentProjectId;
-        el.indicatorProjectLabel.textContent = currentProjectId;
-        el.currentVersionLabel.textContent = '-';
-        el.pdfContainer.innerHTML = '';
-        await loadVersions();
-        await loadChecklists();
-        await loadIndicators();
-        setActiveNav(el.navProject);
-        showView('project');
-      });
+/* ═══════════════════════════════════════════════════════
+   VERSION MENU (topbar)
+═══════════════════════════════════════════════════════ */
+function toggleVerMenu(){
+  const existing=document.getElementById('ver-menu');
+  if(existing){existing.remove();return;}
+  if(!UI.proj){alert('Selecione um projeto primeiro.');return;}
+  const tb=document.getElementById('tb');
+  const menu=document.createElement('div');
+  menu.id='ver-menu';menu.className='ver-menu';
+  let h='';
+  if(UI.versions.length){
+    UI.versions.forEach(v=>{
+      h+=`<div class="vm-item" data-vid="${v.id}">
+        <div class="vm-tag">${v.version_tag}</div>
+        <div class="vm-meta">${v.created_by||''} · ${fmtDate(v.created_at?.split('T')[0])}</div>
+        ${v.id===UI.ver?'<div class="vm-sel">✓ ativa</div>':''}
+      </div>`;
     });
+  }else{
+    h='<div style="padding:12px 14px;font-size:11px;color:var(--ink3)">Nenhuma versão ainda.</div>';
   }
+  h+=`<div class="vm-item" onclick="openNewVerMo()" style="border-top:1px solid var(--brd)">
+    <div class="vm-tag" style="color:var(--g)">＋</div>
+    <div class="vm-meta" style="color:var(--g)">Nova versão…</div>
+  </div>`;
+  menu.innerHTML=h;
+  tb.appendChild(menu);
+  menu.querySelectorAll('[data-vid]').forEach(el=>el.addEventListener('click',()=>{
+    UI.ver=el.dataset.vid;sS();menu.remove();renderSB();renderTaskList();renderPins();
+  }));
+  setTimeout(()=>{ document.addEventListener('click',function oc(e){if(!menu.contains(e.target)){menu.remove();document.removeEventListener('click',oc);}},{once:true,capture:true}); },80);
+}
 
-  async function createProject() {
-    if (!requireLogin()) return;
-    const id = el.newProjectId.value.trim().toLowerCase();
-    const name = el.newProjectName.value.trim();
-    const color = el.newProjectColor.value.trim() || '#2B7FDD';
-
-    if (!id || !name) return alert('Informe ID e nome do projeto.');
-
-    const { error } = await sb.from('projects').insert([{
-      id, name, color, created_at: new Date().toISOString()
-    }]);
-
-    if (error) return alert('Erro criar projeto: ' + error.message);
-
-    // adiciona o próprio usuário no projeto
-    await sb.rpc('add_me_to_project', { p_project_id: id, p_role: 'owner' });
-
-    el.newProjectId.value = '';
-    el.newProjectName.value = '';
-    el.newProjectColor.value = '';
-    await loadProjects();
+/* ═══════════════════════════════════════════════════════
+   PDF
+═══════════════════════════════════════════════════════ */
+function triggerUpload(){document.getElementById('fi').click();}
+document.getElementById('fi').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(f)await loadPDF(f);e.target.value='';
+});
+const DZ=document.getElementById('dz');
+DZ.addEventListener('dragover',e=>{e.preventDefault();DZ.classList.add('drag');});
+DZ.addEventListener('dragleave',()=>DZ.classList.remove('drag'));
+DZ.addEventListener('drop',async e=>{
+  e.preventDefault();DZ.classList.remove('drag');
+  const f=e.dataTransfer.files[0];
+  if(f?.type==='application/pdf')await loadPDF(f);
+});
+function showDZ(){
+  document.getElementById('dz').style.display='flex';
+  document.getElementById('pdf-vp').style.display='none';
+  document.getElementById('pdf-bar').style.display='none';
+}
+function showVP(){
+  document.getElementById('dz').style.display='none';
+  document.getElementById('pdf-vp').style.display='flex';
+  document.getElementById('pdf-bar').style.display='flex';
+}
+async function loadPDF(file){
+  if(!UI.proj){alert('Selecione um projeto antes de carregar o PDF.');return;}
+  showLd('Carregando PDF…');
+  try{
+    const buf=await file.arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+    PDF.doc=doc;PDF.pages=doc.numPages;PDF.curr=1;PDF.proj=UI.proj;PDF.ver=UI.ver;
+    showVP();await renderPages();updPI();renderPins();renderTaskList();
+  }catch(e){alert('Não foi possível abrir o PDF. Verifique se não está protegido.');}
+  hideLd();
+}
+async function renderPages(){
+  const vp=document.getElementById('pdf-vp');vp.innerHTML='';
+  for(let p=1;p<=PDF.pages;p++){
+    const page=await PDF.doc.getPage(p);
+    const viewport=page.getViewport({scale:UI.scale});
+    const wrap=document.createElement('div');
+    wrap.className='page-wrap';wrap.dataset.page=p;
+    wrap.style.width=viewport.width+'px';wrap.style.height=viewport.height+'px';
+    const cv=document.createElement('canvas');
+    cv.width=viewport.width;cv.height=viewport.height;
+    await page.render({canvasContext:cv.getContext('2d'),viewport}).promise;
+    wrap.appendChild(cv);
+    const lbl=document.createElement('div');lbl.className='pg-lbl';lbl.textContent=`página ${p}`;
+    wrap.appendChild(lbl);
+    vp.appendChild(wrap);
+    wrap.addEventListener('click',e=>onPdfClick(e,wrap,p));
   }
+}
+function updPI(){
+  document.getElementById('pinfo').textContent=`${PDF.curr}/${PDF.pages}`;
+  document.getElementById('bprev').disabled=PDF.curr<=1;
+  document.getElementById('bnext').disabled=PDF.curr>=PDF.pages;
+  document.getElementById('pzoom').textContent=Math.round(UI.scale*100)+'%';
+}
+document.getElementById('bprev').addEventListener('click',()=>goPage(PDF.curr-1));
+document.getElementById('bnext').addEventListener('click',()=>goPage(PDF.curr+1));
+document.getElementById('bzin').addEventListener('click',async()=>{
+  UI.scale=Math.min(UI.scale+0.15,2.5);sS();
+  if(PDF.doc){await renderPages();renderPins();updPI();}
+});
+document.getElementById('bzout').addEventListener('click',async()=>{
+  UI.scale=Math.max(UI.scale-0.15,0.7);sS();
+  if(PDF.doc){await renderPages();renderPins();updPI();}
+});
+function goPage(p){
+  if(p<1||p>PDF.pages)return;
+  PDF.curr=p;updPI();
+  document.querySelector(`[data-page="${p}"]`)?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('pdf-vp').addEventListener('scroll',()=>{
+  const sc=document.getElementById('pdf-vp');
+  document.querySelectorAll('.page-wrap').forEach(w=>{
+    if(w.offsetTop<=sc.scrollTop+300){const n=parseInt(w.dataset.page);if(n!==PDF.curr){PDF.curr=n;updPI();}}
+  });
+},{passive:true});
 
-  // =========================
-  // VERSIONS
-  // =========================
-  async function loadVersions() {
-    if (!currentProjectId) return;
-    const { data, error } = await sb.from('project_versions')
-      .select('*')
-      .eq('project_id', currentProjectId)
-      .order('created_at', { ascending: false });
+/* ═══════════════════════════════════════════════════════
+   CLICK TO COMMENT
+═══════════════════════════════════════════════════════ */
+function onPdfClick(e,wrap,pageNum){
+  if(e.target.closest('#cpop')||e.target.closest('.pin'))return;
+  closePop();
+  const rect=wrap.getBoundingClientRect();
+  const xPct=((e.clientX-rect.left)/wrap.offsetWidth*100).toFixed(2);
+  const yPct=((e.clientY-rect.top)/wrap.offsetHeight*100).toFixed(2);
+  const dm=UI.members.find(x=>x.name===UI.me);
+  const defArea=dm?.area||'design';
+  const due7=(()=>{const d=new Date();d.setDate(d.getDate()+7);return d.toISOString().split('T')[0];})();
 
-    if (error) return alert('Erro versões: ' + error.message);
-
-    versions = data || [];
-    renderVersions();
-  }
-
-  function renderVersions() {
-    if (versions.length === 0) {
-      el.versionsList.innerHTML = `<p class="muted">Nenhuma versão.</p>`;
-      return;
-    }
-
-    el.versionsList.innerHTML = versions.map(v => `
-      <div class="list-item" data-version-id="${v.id}">
-        <strong>${v.version_tag}</strong>
-        <span class="muted"> | ${new Date(v.created_at).toLocaleString()}</span>
-        ${v.pdf_url ? '<span class="ok"> | 📎 PDF</span>' : '<span class="muted"> | sem PDF</span>'}
+  const pop=document.createElement('div');
+  pop.id='cpop';
+  pop.innerHTML=`
+    <div class="cp-h">
+      <div class="cp-badge" id="cp-bdg">🔴 Tarefa · pág ${pageNum}</div>
+      <div class="cp-title">Novo registro</div>
+      <button class="cp-x" id="cpx">✕</button>
+    </div>
+    <div class="cp-b">
+      <div>
+        <label class="fl">Tipo</label>
+        <select class="fc" id="pp-tipo" onchange="updPopTipo()">
+          <option value="tarefa">🔴 Tarefa (exige correção)</option>
+          <option value="observacao">🟡 Observação (atenção/estudo)</option>
+        </select>
       </div>
-    `).join('');
-
-    document.querySelectorAll('[data-version-id]').forEach(item => {
-      item.addEventListener('click', async () => {
-        currentVersionId = item.getAttribute('data-version-id');
-        el.currentVersionLabel.textContent = currentVersionId;
-        const v = versions.find(x => x.id === currentVersionId);
-        currentPdfUrl = v?.pdf_url || null;
-        if (currentPdfUrl) await loadPDF(currentPdfUrl);
-        await loadTasks();
-      });
-    });
-  }
-
-  async function createVersion() {
-    if (!currentProjectId) return alert('Selecione um projeto.');
-    const tag = el.newVersionTag.value.trim();
-    if (!tag) return alert('Informe a tag da versão.');
-
-    const { data, error } = await sb.from('project_versions').insert([{
-      project_id: currentProjectId,
-      version_tag: tag,
-      created_by: session?.user?.email || 'Usuário',
-      created_at: new Date().toISOString()
-    }]).select();
-
-    if (error) return alert('Erro criar versão: ' + error.message);
-
-    el.newVersionTag.value = '';
-    await loadVersions();
-    if (data?.[0]) {
-      currentVersionId = data[0].id;
-      el.currentVersionLabel.textContent = currentVersionId;
-    }
-  }
-
-  // =========================
-  // PDF + TASKS
-  // =========================
-  async function uploadPDF(file) {
-    if (!currentProjectId || !currentVersionId) return alert('Selecione projeto e versão.');
-    const path = `${currentProjectId}/${currentVersionId}/${file.name}`;
-
-    const up = await sb.storage.from('pdfs').upload(path, file, { upsert: true });
-    if (up.error) return alert('Erro upload PDF: ' + up.error.message);
-
-    const { data } = sb.storage.from('pdfs').getPublicUrl(path);
-    const url = data.publicUrl;
-
-    const { error } = await sb.from('project_versions').update({ pdf_url: url }).eq('id', currentVersionId);
-    if (error) return alert('Erro salvar URL PDF: ' + error.message);
-
-    currentPdfUrl = url;
-    await loadVersions();
-    await loadPDF(url);
-  }
-
-  async function loadPDF(url) {
-    try {
-      const task = pdfjsLib.getDocument(url);
-      pdfDoc = await task.promise;
-      await renderPDF();
-    } catch (e) {
-      alert('Erro carregar PDF: ' + e.message);
-    }
-  }
-
-  async function renderPDF() {
-    const c = el.pdfContainer;
-    c.innerHTML = '';
-    if (!pdfDoc) return;
-
-    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-      const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.2 });
-
-      const pageDiv = document.createElement('div');
-      pageDiv.className = 'pdf-page';
-      pageDiv.dataset.page = pageNum;
-      pageDiv.style.width = viewport.width + 'px';
-      pageDiv.style.height = viewport.height + 'px';
-
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      await page.render({
-        canvasContext: canvas.getContext('2d'),
-        viewport
-      }).promise;
-
-      pageDiv.appendChild(canvas);
-
-      pageDiv.addEventListener('click', async (e) => {
-        if (!currentVersionId || !currentProjectId) return;
-        const text = prompt('Descrição da tarefa:');
-        if (!text) return;
-
-        const rect = pageDiv.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-
-        const { error } = await sb.from('tasks').insert([{
-          project_id: currentProjectId,
-          version_id: currentVersionId,
-          task_text: text,
-          type: 'tarefa',
-          area: 'geral',
-          page: pageNum,
-          x_pos: x,
-          y_pos: y,
-          priority: 'media',
-          is_done: false,
-          created_by: session?.user?.email || 'Usuário',
-          created_at: new Date().toISOString()
-        }]);
-
-        if (error) return alert('Erro criar tarefa: ' + error.message);
-        await loadTasks();
-      });
-
-      c.appendChild(pageDiv);
-    }
-
-    renderPins();
-  }
-
-  async function loadTasks() {
-    if (!currentVersionId) return;
-    const { data, error } = await sb.from('tasks')
-      .select('*')
-      .eq('version_id', currentVersionId)
-      .order('created_at', { ascending: false });
-
-    if (error) return alert('Erro tarefas: ' + error.message);
-    tasks = data || [];
-    renderTasks();
-    renderPins();
-  }
-
-  function renderTasks() {
-    if (tasks.length === 0) {
-      el.tasksList.innerHTML = `<p class="muted">Sem tarefas nesta versão.</p>`;
-      return;
-    }
-
-    el.tasksList.innerHTML = tasks.map(t => `
-      <div class="list-item">
-        <strong>${t.task_text}</strong>
-        <div class="muted">página ${t.page || '-'} | prioridade ${t.priority || '-'} | ${t.is_done ? '✅ concluída' : '⏳ pendente'}</div>
-        <button class="action secondary" data-toggle-task="${t.id}" style="margin-top:8px;">
-          Marcar como ${t.is_done ? 'pendente' : 'concluída'}
-        </button>
+      <div>
+        <label class="fl">Descrição</label>
+        <textarea class="fc" id="pp-txt" placeholder="Descreva a alteração ou observação…" rows="3"></textarea>
       </div>
-    `).join('');
-
-    document.querySelectorAll('[data-toggle-task]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.getAttribute('data-toggle-task'));
-        const item = tasks.find(x => x.id === id);
-        if (!item) return;
-
-        const { error } = await sb.from('tasks')
-          .update({
-            is_done: !item.is_done,
-            checked_by: session?.user?.email || 'Usuário',
-            checked_at: new Date().toISOString()
-          })
-          .eq('id', id);
-
-        if (error) return alert('Erro atualizar tarefa: ' + error.message);
-        await loadTasks();
-      });
-    });
-  }
-
-  function renderPins() {
-    document.querySelectorAll('.pin').forEach(p => p.remove());
-
-    tasks.forEach(t => {
-      const pageDiv = document.querySelector(`.pdf-page[data-page="${t.page}"]`);
-      if (!pageDiv) return;
-
-      const pin = document.createElement('div');
-      pin.className = `pin ${t.is_done ? 'done' : ''}`;
-      pin.style.left = (t.x_pos * 100) + '%';
-      pin.style.top = (t.y_pos * 100) + '%';
-      pin.title = t.task_text;
-      pageDiv.appendChild(pin);
-    });
-  }
-
-  // =========================
-  // CHECKLIST
-  // =========================
-  async function loadChecklists() {
-    if (!currentProjectId) return;
-    const { data, error } = await sb.from('checklists')
-      .select('*')
-      .eq('project_id', currentProjectId)
-      .order('area', { ascending: true });
-
-    if (error) return alert('Erro checklist: ' + error.message);
-    checklists = data || [];
-    renderChecklists();
-  }
-
-  function renderChecklists() {
-    if (!currentProjectId) {
-      el.checklistList.innerHTML = '<p class="muted">Selecione um projeto.</p>';
-      return;
-    }
-    if (checklists.length === 0) {
-      el.checklistList.innerHTML = '<p class="muted">Nenhum item de checklist.</p>';
-      return;
-    }
-
-    el.checklistList.innerHTML = checklists.map(c => `
-      <div class="list-item">
-        <label class="row">
-          <input type="checkbox" data-check-id="${c.id}" ${c.is_checked ? 'checked' : ''} />
-          <strong>${c.item}</strong>
-          <span class="muted">(${c.area || 'geral'})</span>
-        </label>
+      <div class="p2">
+        <div>
+          <label class="fl">Área</label>
+          <select class="fc" id="pp-area">
+            ${ATYPES.map(a=>`<option value="${a}"${a===defArea?' selected':''}>${AL[a]}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="fl">Responsável</label>
+          <select class="fc" id="pp-who">
+            ${UI.members.map(m=>`<option${m.name===UI.me?' selected':''}>${m.name}</option>`).join('')}
+          </select>
+        </div>
       </div>
-    `).join('');
-
-    document.querySelectorAll('[data-check-id]').forEach(chk => {
-      chk.addEventListener('change', async () => {
-        const id = chk.getAttribute('data-check-id');
-        const current = checklists.find(x => x.id === id);
-        if (!current) return;
-
-        const { error } = await sb.from('checklists').update({
-          is_checked: !current.is_checked,
-          checked_by: session?.user?.email || 'Usuário',
-          checked_at: new Date().toISOString()
-        }).eq('id', id);
-
-        if (error) return alert('Erro atualizar checklist: ' + error.message);
-        await loadChecklists();
-      });
-    });
-  }
-
-  // =========================
-  // INDICATORS
-  // =========================
-  async function loadIndicators() {
-    if (!currentProjectId) return;
-    const { data, error } = await sb.from('project_indicators')
-      .select('*')
-      .eq('project_id', currentProjectId)
-      .order('created_at', { ascending: false });
-
-    if (error) return alert('Erro indicadores: ' + error.message);
-    indicators = data || [];
-    renderIndicators();
-  }
-
-  async function addIndicator() {
-    if (!currentProjectId) return alert('Selecione um projeto.');
-    const name = el.indicatorName.value.trim();
-    const page = parseInt(el.indicatorPage.value.trim(), 10);
-    const sheet = el.indicatorSheet.value.trim();
-
-    if (!name) return alert('Informe o nome do indicador.');
-
-    const { error } = await sb.from('project_indicators').insert([{
-      project_id: currentProjectId,
-      indicator_name: name,
-      page: Number.isNaN(page) ? null : page,
-      spreadsheet_lake: sheet || null,
-      created_at: new Date().toISOString()
-    }]);
-
-    if (error) return alert('Erro adicionar indicador: ' + error.message);
-
-    el.indicatorName.value = '';
-    el.indicatorPage.value = '';
-    el.indicatorSheet.value = '';
-    await loadIndicators();
-  }
-
-  function renderIndicators() {
-    if (!currentProjectId) {
-      el.indicatorsList.innerHTML = '<p class="muted">Selecione um projeto.</p>';
-      return;
-    }
-    if (indicators.length === 0) {
-      el.indicatorsList.innerHTML = '<p class="muted">Sem indicadores.</p>';
-      return;
-    }
-
-    el.indicatorsList.innerHTML = indicators.map(i => `
-      <div class="list-item">
-        <strong>${i.indicator_name}</strong>
-        <div class="muted">Página: ${i.page ?? '-'} | Planilha: ${i.spreadsheet_lake ?? '-'}</div>
+      <div class="p2">
+        <div><label class="fl">Prazo</label><input type="date" class="fc" id="pp-due" value="${due7}"></div>
+        <div><label class="fl">Prioridade</label>
+          <select class="fc" id="pp-prio">
+            <option value="media">Normal</option>
+            <option value="urgente">🔴 Urgente</option>
+            <option value="alta">Alta</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </div>
       </div>
-    `).join('');
+    </div>
+    <div class="cp-f">
+      <span class="cp-sh">Ctrl+Enter para salvar</span>
+      <button class="btn sm" id="pp-cancel">Cancelar</button>
+      <button class="btn g sm" id="pp-save">Criar →</button>
+    </div>`;
+
+  const px=parseFloat(xPct)/100*wrap.offsetWidth;
+  const py=parseFloat(yPct)/100*wrap.offsetHeight;
+  pop.style.position='absolute';
+  let pl=px+22;if(pl+315>wrap.offsetWidth)pl=px-321;
+  pop.style.left=Math.max(4,pl)+'px';
+  pop.style.top=Math.max(4,py-18)+'px';
+  wrap._pin={x:xPct,y:yPct,page:pageNum};
+  wrap.appendChild(pop);
+
+  setTimeout(()=>{ document.getElementById('pp-txt')?.focus(); },50);
+  document.getElementById('cpx').onclick=closePop;
+  document.getElementById('pp-cancel').onclick=closePop;
+  document.getElementById('pp-save').onclick=()=>doSaveTask(wrap);
+  pop.querySelector('#pp-txt').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))doSaveTask(wrap);
+  });
+  setTimeout(()=>{document.addEventListener('click',outClose,{once:true,capture:true});},80);
+}
+function updPopTipo(){
+  const t=document.getElementById('pp-tipo')?.value;
+  const bdg=document.getElementById('cp-bdg');
+  if(!bdg)return;
+  const pg=bdg.textContent.match(/pág \d+/)?.[0]||'';
+  bdg.textContent=(t==='tarefa'?'🔴 Tarefa':'🟡 Obs.')+' · '+pg;
+  bdg.className='cp-badge'+(t==='observacao'?' obs':'');
+}
+function outClose(e){const p=document.getElementById('cpop');if(p&&!p.contains(e.target))closePop();}
+function closePop(){
+  document.removeEventListener('click',outClose,{capture:true});
+  const p=document.getElementById('cpop');
+  if(p){const w=p.parentElement;if(w)delete w._pin;p.remove();}
+}
+async function doSaveTask(wrap){
+  const txt=document.getElementById('pp-txt')?.value.trim();
+  if(!txt){document.getElementById('pp-txt')?.focus();return;}
+  const pin=wrap._pin;if(!pin)return;
+  const tipo=document.getElementById('pp-tipo').value;
+  const area=document.getElementById('pp-area').value;
+  const who=document.getElementById('pp-who').value;
+  const due=document.getElementById('pp-due').value;
+  const prio=document.getElementById('pp-prio').value;
+  const color=tipo==='observacao'?'#F5C800':(AC[area]||'#888');
+  closePop();showLd('Salvando…');
+  try{
+    const row={
+      project_id:UI.proj,
+      version_id:UI.ver||null,
+      task_text:txt,type:tipo,area,
+      responsible:who,
+      due_date:due||null,
+      page:pin.page,x_pos:parseFloat(pin.x),y_pos:parseFloat(pin.y),
+      is_done:false,priority:prio,note:'',color,
+      created_by:UI.me,
+    };
+    const t=await dbIns('tasks',row);
+    UI.tasks.push(t);
+  }catch(e){console.error(e);alert('Erro ao salvar. Verifique o console.');}
+  hideLd();renderPins();renderTaskList();renderSB();
+}
+
+/* ═══════════════════════════════════════════════════════
+   PINS
+═══════════════════════════════════════════════════════ */
+function renderPins(){
+  document.querySelectorAll('.pin').forEach(p=>p.remove());
+  if(PDF.proj!==UI.proj)return;
+  const tasks=UI.tasks.filter(t=>t.project_id===UI.proj);
+  tasks.forEach((t,i)=>{
+    const wrap=document.querySelector(`[data-page="${t.page}"]`);
+    if(!wrap)return;
+    const pin=document.createElement('div');
+    pin.className='pin'+(t.type==='observacao'?' obs-pin':'')+(t.is_done?' done-pin':'');
+    pin.dataset.tid=t.id;
+    pin.style.left=t.x_pos+'%';pin.style.top=t.y_pos+'%';
+    pin.style.background=t.is_done?'#A8A39C':(t.color||(AC[t.area]||'#888'));
+    pin.innerHTML=`<span class="pin-n">${i+1}</span>`;
+    pin.title=`${t.responsible||''} · ${AL[t.area]||t.area} · pág ${t.page}${t.priority==='urgente'?' · URGENTE':''}`;
+    pin.addEventListener('click',e=>{e.stopPropagation();hlTask(t.id);});
+    wrap.appendChild(pin);
+  });
+}
+function hlTask(id){
+  const el=document.querySelector(`[data-tid="${id}"]`);
+  if(!el)return;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const t=UI.tasks.find(x=>String(x.id)===String(id));
+  el.style.outline=`2px solid ${AC[t?.area]||'#888'}`;
+  el.style.outlineOffset='2px';
+  setTimeout(()=>{el.style.outline='';el.style.outlineOffset='';},1100);
+}
+
+/* ═══════════════════════════════════════════════════════
+   TASK LIST
+═══════════════════════════════════════════════════════ */
+function renderTaskList(){
+  const all=UI.tasks.filter(t=>t.project_id===UI.proj);
+  const f=UI.filt;
+  let list;
+  if(f==='all')list=all;
+  else if(f==='tarefa'||f==='observacao')list=all.filter(t=>t.type===f);
+  else list=all.filter(t=>t.area===f);
+
+  const open=all.filter(t=>!t.is_done).length;
+  const done=all.filter(t=>t.is_done).length;
+  document.getElementById('st-open').textContent=`${open} aberta${open!==1?'s':''}`;
+  document.getElementById('st-done').textContent=`${done} ok`;
+
+  const el=document.getElementById('tpl');
+  if(!all.length){
+    el.innerHTML=`<div class="es"><div class="ei">📋</div>
+      <div class="et">${PDF.doc?'Nenhuma tarefa ainda':'PDF não carregado'}</div>
+      <div class="sub">${PDF.doc?'Clique em qualquer ponto do PDF para criar':'Faça o upload do PDF para começar'}</div></div>`;
+    return;
+  }
+  if(!list.length){
+    el.innerHTML=`<div class="es"><div class="ei">🔍</div><div class="et">Nenhuma tarefa neste filtro</div></div>`;
+    return;
   }
 
-  // =========================
-  // NAV
-  // =========================
-  el.navAuth.addEventListener('click', () => { setActiveNav(el.navAuth); showView('auth'); });
-  el.navDash.addEventListener('click', async () => {
-    if (!requireLogin()) return;
-    await loadProjects();
-    setActiveNav(el.navDash);
-    showView('dash');
-  });
-  el.navProject.addEventListener('click', () => {
-    if (!requireLogin()) return;
-    setActiveNav(el.navProject);
-    showView('project');
-  });
-  el.navChecklist.addEventListener('click', async () => {
-    if (!requireLogin()) return;
-    await loadChecklists();
-    setActiveNav(el.navChecklist);
-    showView('checklist');
-  });
-  el.navIndicators.addEventListener('click', async () => {
-    if (!requireLogin()) return;
-    await loadIndicators();
-    setActiveNav(el.navIndicators);
-    showView('indicators');
+  const today=new Date();today.setHours(0,0,0,0);
+  const sorted=[...list].sort((a,b)=>{
+    if(a.is_done!==b.is_done)return a.is_done?1:-1;
+    const pp={urgente:0,alta:1,media:2,baixa:3};
+    const pa=pp[a.priority]??2,pb=pp[b.priority]??2;
+    if(pa!==pb)return pa-pb;
+    return (a.page||0)-(b.page||0);
   });
 
-  // =========================
-  // EVENTS
-  // =========================
-  el.btnSignup.addEventListener('click', doSignUp);
-  el.btnLogin.addEventListener('click', doLogin);
-  el.btnLogout.addEventListener('click', doLogout);
+  el.innerHTML=sorted.map(t=>{
+    const idx=all.indexOf(t)+1;
+    const isObs=t.type==='observacao';
+    const css=isObs?'t-o':(ACSS[t.area]||'t-b');
+    const pinC=t.is_done?'#A8A39C':(t.color||(AC[t.area]||'#888'));
+    const ov=t.due_date&&!t.is_done&&new Date(t.due_date)<today;
+    const due=t.due_date?fmtDate(t.due_date):'';
+    const urg=t.priority==='urgente'&&!isObs;
+    return `<div class="tc ${css}${t.is_done?' done-tc':''}" data-tid="${t.id}">
+      <div class="pin-n2" style="background:${pinC}">${idx}</div>
+      <div class="chk${t.is_done?' ck':''}" data-ck="${t.id}"></div>
+      <div class="tc-b">
+        ${urg?'<span style="font-size:9px;color:var(--blk);font-weight:700">●URG </span>':''}
+        <span class="tc-t${t.is_done?' ds':''}">${t.task_text}</span>
+        ${t.note?`<div class="tc-note">${t.note}</div>`:''}
+        <div class="tc-m">
+          ${t.responsible?`<span class="tcw">${t.responsible}</span>`:''}
+          ${due?`<span class="tcd${ov?' ov':''}">${ov?'⚠ ':''}${due}</span>`:''}
+          ${t.page?`<span class="tcp">pág ${t.page}</span>`:''}
+          <span class="tctag">${isObs?'Obs':(AL[t.area]||t.area||'—')}</span>
+        </div>
+        <div class="tc-acts">
+          ${!t.is_done
+            ?`<button class="ab done-ab" data-done="${t.id}">✓ Concluir</button>`
+            :`<button class="ab" data-undone="${t.id}">↩ Reabrir</button>`}
+          <button class="ab note-ab" data-note="${t.id}">✎ Anotar</button>
+          <button class="ab" data-goto="${t.id}">⌖ PDF</button>
+        </div>
+        <div id="nf-${t.id}"></div>
+      </div>
+      <button class="tc-del" data-del="${t.id}">✕</button>
+    </div>`;
+  }).join('');
 
-  el.btnCreateProject.addEventListener('click', createProject);
-  el.btnCreateVersion.addEventListener('click', createVersion);
+  el.querySelectorAll('[data-ck]').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();doToggle(e.dataset.ck);}));
+  el.querySelectorAll('[data-done]').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();doToggle(e.dataset.done,true);}));
+  el.querySelectorAll('[data-undone]').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();doToggle(e.dataset.undone,false);}));
+  el.querySelectorAll('[data-note]').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();openNoteForm(e.dataset.note);}));
+  el.querySelectorAll('[data-goto]').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();gotoPin(e.dataset.goto);}));
+  el.querySelectorAll('[data-del]').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();doDelTask(e.dataset.del);}));
+  el.querySelectorAll('.tc').forEach(e=>e.addEventListener('click',()=>gotoPin(e.dataset.tid)));
+}
 
-  el.pdfUpload.addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (file) await uploadPDF(file);
+async function doToggle(id,force){
+  const t=UI.tasks.find(x=>String(x.id)===String(id));if(!t)return;
+  const val=force!==undefined?force:!t.is_done;
+  t.is_done=val;
+  renderPins();renderTaskList();renderSB();
+  try{await SB.from('tasks').update({is_done:val,checked_by:UI.me,checked_at:new Date().toISOString()}).eq('id',id);}catch(e){console.error(e);}
+}
+async function doDelTask(id){
+  UI.tasks=UI.tasks.filter(t=>String(t.id)!==String(id));
+  renderPins();renderTaskList();renderSB();
+  try{await dbDel('tasks',id);}catch(e){console.error(e);}
+}
+function gotoPin(id){
+  const t=UI.tasks.find(x=>String(x.id)===String(id));if(!t)return;
+  const pin=document.querySelector(`.pin[data-tid="${id}"]`);
+  const wrap=pin?.parentElement||document.querySelector(`[data-page="${t.page}"]`);
+  if(wrap)wrap.scrollIntoView({behavior:'smooth',block:'center'});
+  if(pin){const o=pin.style.transform;pin.style.transform='rotate(-45deg) translate(-50%,-100%) scale(1.4)';setTimeout(()=>{pin.style.transform=o;},700);}
+}
+function openNoteForm(id){
+  const c=document.getElementById(`nf-${id}`);if(!c)return;
+  if(c.innerHTML){c.innerHTML='';return;}
+  const t=UI.tasks.find(x=>String(x.id)===String(id));
+  c.innerHTML=`<div class="note-form">
+    <textarea placeholder="Anotação técnica ou feedback…" rows="2">${t?.note||''}</textarea>
+    <div class="nfbtns">
+      <button class="btn g sm" onclick="doSaveNote('${id}')">Ok</button>
+      <button class="btn sm" onclick="document.getElementById('nf-${id}').innerHTML=''">✕</button>
+    </div>
+  </div>`;
+  c.querySelector('textarea').focus();
+}
+async function doSaveNote(id){
+  const c=document.getElementById(`nf-${id}`);
+  const val=c?.querySelector('textarea')?.value.trim()||'';
+  const t=UI.tasks.find(x=>String(x.id)===String(id));if(!t)return;
+  t.note=val;c.innerHTML='';renderTaskList();
+  try{await SB.from('tasks').update({note:val}).eq('id',id);}catch(e){console.error(e);}
+}
+
+/* Filtros */
+document.getElementById('tpf').addEventListener('click',e=>{
+  const fp=e.target.closest('.fp');if(!fp)return;
+  UI.filt=fp.dataset.f;
+  document.querySelectorAll('.fp').forEach(f=>f.classList.toggle('on',f.dataset.f===UI.filt));
+  renderTaskList();
+});
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: VERSÕES
+═══════════════════════════════════════════════════════ */
+function renderVerView(){
+  const el=document.getElementById('v-ver');
+  const curVer=UI.versions.find(v=>v.id===UI.ver);
+  const all=UI.tasks.filter(t=>t.project_id===UI.proj);
+  const verTasks=curVer?UI.tasks.filter(t=>t.version_id===curVer.id):[];
+  const vDone=verTasks.filter(t=>t.is_done).length;
+  const vOpen=verTasks.length-vDone;
+
+  el.innerHTML=`
+    <div class="vcur">
+      <div class="vcl">Versão ativa · ${UI.projects.find(p=>p.id===UI.proj)?.demandante||'SEGAPE'}</div>
+      <div class="vch">
+        <div class="vbdg">${curVer?.version_tag||'—'}</div>
+        <div class="vcm">
+          <div class="vmd">${curVer?`${fmtDate(curVer.created_at?.split('T')[0])} · por <strong>${curVer.created_by||'—'}</strong>`:'Nenhuma versão ativa'}</div>
+          <div class="vmn">${curVer?.changelog||'—'}</div>
+        </div>
+        <div class="vcsts">
+          <div class="vcst"><div class="sv">${verTasks.length}</div><div class="sl">tarefas</div></div>
+          <div class="vcst"><div class="sv" style="color:var(--done)">${vDone}</div><div class="sl">ok</div></div>
+          <div class="vcst"><div class="sv" style="color:${vOpen?'var(--blk)':'var(--ink3)'}">${vOpen}</div><div class="sl">abertas</div></div>
+        </div>
+      </div>
+      <button class="btn g sm" onclick="openNewVerMo()">+ Nova versão</button>
+    </div>
+
+    <div class="hist-box">
+      <div class="hist-hd">Histórico de versões <span class="hcnt">${UI.versions.length}</span></div>
+      ${UI.versions.map((v,vi)=>{
+        const vt=UI.tasks.filter(t=>t.version_id===v.id);
+        const vd=vt.filter(t=>t.is_done).length;
+        const vo=vt.length-vd;
+        const open=document.getElementById(`hbody-${vi}`);
+        return `<div class="he">
+          <div class="her" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.htog').textContent=this.nextElementSibling.style.display==='none'?'▼':'▲'">
+            <div class="hvtag">${v.version_tag}</div>
+            <div class="hmeta"><strong>${fmtDate(v.created_at?.split('T')[0])}</strong> · ${v.created_by||'—'} · ${v.changelog?.slice(0,55)||'—'}${v.changelog?.length>55?'…':''}</div>
+            <div class="hts">
+              <span class="htsp" style="background:#E0F5EE;color:#0D6040">${vd} ok</span>
+              ${vo?`<span class="htsp" style="background:#FBDADA;color:#8A2020">${vo} aberta${vo!==1?'s':''}</span>`:''}
+            </div>
+            <div class="htog">▼</div>
+          </div>
+          <div style="display:none" class="hbdy">
+            ${vt.length?vt.map(t=>`<div class="hti ${t.is_done?'htd':'hto'}">
+              <span>${t.is_done?'✓':'○'}</span>
+              <span style="flex:1">${t.task_text?.slice(0,70)}${t.task_text?.length>70?'…':''}</span>
+              <span style="font-size:10px;color:var(--ink3);font-family:var(--fm)">${t.responsible||'—'} · pág ${t.page||'—'}</span>
+            </div>`).join('')
+            :'<div style="font-size:11px;color:var(--ink3);padding:6px">Nenhuma tarefa registrada nesta versão.</div>'}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: CHECKLIST
+═══════════════════════════════════════════════════════ */
+async function renderChkView(){
+  const el=document.getElementById('v-chk');
+  el.innerHTML='<div class="es"><div class="spin" style="margin:20px auto"></div></div>';
+  showLd('Carregando checklist…');
+  UI.checklists=await dbQ('checklists',{project_id:UI.proj});
+  hideLd();
+
+  const grouped={};
+  UI.checklists.forEach(c=>{
+    if(!grouped[c.area])grouped[c.area]=[];
+    grouped[c.area].push(c);
   });
 
-  el.btnReloadPdf.addEventListener('click', async () => {
-    if (currentPdfUrl) await loadPDF(currentPdfUrl);
-  });
+  const areaOrder=['design','front','back','dados','sup','aprov'];
+  const sortedAreas=areaOrder.filter(a=>grouped[a]).concat(Object.keys(grouped).filter(a=>!areaOrder.includes(a)));
 
-  el.btnAddIndicator.addEventListener('click', addIndicator);
+  el.innerHTML=sortedAreas.map(area=>{
+    const items=grouped[area];
+    const done=items.filter(i=>i.is_checked).length;
+    const pct=items.length?Math.round(done/items.length*100):0;
+    const aColor=AC[area]||'#888';
+    return `<div class="chk-sec">
+      <div class="chk-sec-hd">
+        <div class="av" style="width:22px;height:22px;font-size:8px;background:${aColor}20;color:${aColor}">${(AL[area]||area).slice(0,2)}</div>
+        <h3>${AL[area]||area}</h3>
+        <span class="chk-prog">${done}/${items.length} · ${pct}%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${aColor}"></div></div>
+      ${items.map(item=>`
+        <div class="chk-item" data-cid="${item.id}" data-ck="${item.is_checked}">
+          <div class="ci-box${item.is_checked?' ck':''}"></div>
+          <div class="ci-txt">${item.item}</div>
+          ${item.checked_by?`<div class="ci-who">${item.checked_by}</div>`:''}
+        </div>`).join('')}
+    </div>`;
+  }).join('');
 
-  // =========================
-  // INIT
-  // =========================
-  async function init() {
-    await refreshSession();
-    if (session) {
-      await loadProjects();
-      setActiveNav(el.navDash);
-      showView('dash');
-      setAuthMsg('Sessão ativa.');
-    } else {
-      setActiveNav(el.navAuth);
-      showView('auth');
-      setAuthMsg('Faça login para continuar.');
+  el.querySelectorAll('.chk-item').forEach(e=>e.addEventListener('click',async()=>{
+    const id=e.dataset.cid;
+    const cur=e.dataset.ck==='true';
+    const newVal=!cur;
+    e.dataset.ck=String(newVal);
+    const box=e.querySelector('.ci-box');
+    box.classList.toggle('ck',newVal);
+    const who=e.querySelector('.ci-who');
+    if(who)who.textContent=newVal?UI.me:'';
+    else if(newVal){const w=document.createElement('div');w.className='ci-who';w.textContent=UI.me;e.appendChild(w);}
+    try{await SB.from('checklists').update({is_checked:newVal,checked_by:newVal?UI.me:null}).eq('id',id);}catch(err){console.error(err);}
+    // atualiza progresso visual
+    const sec=e.closest('.chk-sec');
+    if(sec){
+      const items=sec.querySelectorAll('.chk-item');
+      const done=[...items].filter(i=>i.dataset.ck==='true').length;
+      const pct=Math.round(done/items.length*100);
+      sec.querySelector('.chk-prog').textContent=`${done}/${items.length} · ${pct}%`;
+      sec.querySelector('.prog-fill').style.width=pct+'%';
     }
+  }));
+}
 
-    sb.auth.onAuthStateChange(async () => {
-      await refreshSession();
-      if (session) {
-        await loadProjects();
-        setActiveNav(el.navDash);
-        showView('dash');
-      } else {
-        setActiveNav(el.navAuth);
-        showView('auth');
+/* ═══════════════════════════════════════════════════════
+   VIEW: INDICADORES
+═══════════════════════════════════════════════════════ */
+async function renderIndView(){
+  const el=document.getElementById('v-ind');
+  if(!UI.proj){el.innerHTML='<div class="es"><div class="et">Selecione um projeto</div></div>';return;}
+  showLd('Carregando indicadores…');
+  UI.indicators=await dbQ('project_indicators',{project_id:UI.proj});
+  hideLd();
+
+  el.innerHTML=`
+    <div class="ind-wrap">
+      <div class="ind-hd">📊 Auditoria de Indicadores — Data Lake / SQL
+        <span class="hcnt">${UI.indicators.length}</span>
+      </div>
+      ${UI.indicators.length?`
+        <table>
+          <thead><tr>
+            <th>Pág</th><th>Indicador</th><th>Query / Caminho</th><th>Lake</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody>${UI.indicators.map(i=>`<tr>
+            <td><code style="font-family:var(--fm);font-size:10px">${i.page||'—'}</code></td>
+            <td><strong>${i.indicator_name}</strong>${i.observation?`<br><span style="font-size:10px;color:var(--ink3)">${i.observation}</span>`:''}</td>
+            <td><code style="font-size:10px;color:var(--ink2);font-family:var(--fm);word-break:break-all">${i.query_sql||'—'}</code></td>
+            <td style="font-size:10px;color:var(--ink3)">${i.spreadsheet_lake||'—'}</td>
+            <td><span class="ist ${i.is_updated?'ok':'rev'}">${i.is_updated?'● OK':'○ Revisar'}</span></td>
+            <td style="white-space:nowrap;display:flex;gap:4px">
+              <button class="btn sm" onclick="doToggleInd('${i.id}',${!i.is_updated})">${i.is_updated?'Revisar':'✓ OK'}</button>
+              <button class="btn danger sm" onclick="doDelInd('${i.id}')">✕</button>
+            </td>
+          </tr>`).join('')}
+          </tbody>
+        </table>`:'<div style="padding:18px;font-size:11px;color:var(--ink3)">Nenhum indicador vinculado ainda. Adicione abaixo.</div>'}
+    </div>
+
+    <div class="ind-form">
+      <h4>+ Vincular novo indicador ao projeto</h4>
+      <div class="ind-grid">
+        <div><label class="fl">Pág</label><input class="fc" type="number" id="ip-pg" placeholder="12"></div>
+        <div><label class="fl">Nome do Indicador</label><input class="fc" type="text" id="ip-name" placeholder="Ex: Taxa distorção idade-série"></div>
+        <div><label class="fl">Query SQL / Caminho</label><input class="fc" type="text" id="ip-query" placeholder="SELECT ... FROM censo.escolas WHERE ..."></div>
+        <div><label class="fl">Lake / Planilha</label><input class="fc" type="text" id="ip-lake" placeholder="/data/censo_2024/escolas.xlsx"></div>
+      </div>
+      <div class="mfg"><label class="fl">Observação técnica</label><input class="fc" type="text" id="ip-obs" placeholder="Contexto metodológico ou alerta (opcional)"></div>
+      <button class="btn g" onclick="doAddInd()">Vincular ao projeto</button>
+    </div>`;
+}
+async function doToggleInd(id,val){
+  showLd('Atualizando…');
+  try{await dbUpd('project_indicators',id,{is_updated:val,last_updated_at:new Date().toISOString()});}catch(e){console.error(e);}
+  hideLd();await renderIndView();
+}
+async function doDelInd(id){
+  if(!confirm('Remover este indicador?'))return;
+  showLd('Removendo…');
+  try{await dbDel('project_indicators',id);}catch(e){console.error(e);}
+  hideLd();await renderIndView();
+}
+async function doAddInd(){
+  const name=document.getElementById('ip-name').value.trim();
+  if(!name){alert('Informe o nome do indicador.');return;}
+  showLd('Salvando…');
+  try{
+    await dbIns('project_indicators',{
+      project_id:UI.proj,
+      page:parseInt(document.getElementById('ip-pg').value)||null,
+      indicator_name:name,
+      query_sql:document.getElementById('ip-query').value.trim(),
+      spreadsheet_lake:document.getElementById('ip-lake').value.trim(),
+      observation:document.getElementById('ip-obs').value.trim(),
+      is_updated:false,
+    });
+  }catch(e){alert('Erro: '+e.message);}
+  hideLd();await renderIndView();
+}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW: CONFIGURAÇÕES
+═══════════════════════════════════════════════════════ */
+function renderCfgView(){
+  const el=document.getElementById('v-cfg');
+  el.innerHTML=`
+    <h2 style="font-family:var(--fh);font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px">Configurações do sistema</h2>
+
+    <div class="cfg-sec">
+      <div class="cfg-hd"><h3>Projetos (Supabase)</h3><button class="btn g sm" onclick="openNewProjMo()">+ Novo</button></div>
+      <div class="cfg-bd">
+        ${UI.projects.map(p=>`
+          <div class="pr">
+            <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+            <div class="pr-inf">
+              <div class="pr-nm">${p.name}</div>
+              <div class="pr-rl">Demandante: ${p.demandante||'—'} · ${UI.tasks.filter(t=>t.project_id===p.id&&!t.is_done).length} tarefas abertas</div>
+            </div>
+            <button class="btn danger sm" onclick="if(confirm('Remover projeto \\'${p.name.replace(/'/g,"\\'")}\\' e todos os seus dados?')){doDelProj('${p.id}');}">Remover</button>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="cfg-sec">
+      <div class="cfg-hd"><h3>Equipe (Supabase)</h3><button class="btn g sm" onclick="openNewMemberMo()">+ Novo</button></div>
+      <div class="cfg-bd">
+        ${UI.members.map(m=>`
+          <div class="pr">
+            <div class="av" style="width:26px;height:26px;font-size:10px;background:${m.bg};color:${m.color}">${m.name.slice(0,2)}</div>
+            <div class="pr-inf"><div class="pr-nm">${m.name}</div><div class="pr-rl">${m.role||'—'}</div></div>
+            <span class="ptag" style="background:${m.bg};color:${m.color};border-color:${m.color}50">${AL[m.area]||m.area||'—'}</span>
+            <button class="btn danger sm" onclick="doDelMember(${m.id},'${m.name.replace(/'/g,"\\'")}')">Remover</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+async function doDelProj(id){
+  showLd('Removendo projeto…');
+  try{await dbDel('projects',id);if(UI.proj===id){UI.proj=null;UI.ver=null;}}catch(e){alert('Erro: '+e.message);}
+  await refreshAll();hideLd();renderCfgView();
+}
+async function doDelMember(id,name){
+  showLd('Removendo membro…');
+  try{await dbDel('members',id);if(UI.me===name)UI.me='';}catch(e){alert('Erro: '+e.message);}
+  UI.members=await dbQ('members');
+  hideLd();sS();renderSB();renderCfgView();
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════════════════ */
+function openMo(title,body,buttons){
+  document.getElementById('mo-title').textContent=title;
+  document.getElementById('mo-body').innerHTML=body;
+  const mf=document.getElementById('mo-foot');mf.innerHTML='';
+  buttons.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className=b.cls||'btn';btn.textContent=b.label;
+    btn.addEventListener('click',b.cb);mf.appendChild(btn);
+  });
+  document.getElementById('mo-back').classList.remove('hide');
+}
+function closeMo(){document.getElementById('mo-back').classList.add('hide');}
+document.getElementById('mo-back').addEventListener('click',e=>{
+  if(e.target===document.getElementById('mo-back'))closeMo();
+});
+
+/* --- Novo projeto --- */
+function openNewProjMo(){
+  openMo('Novo projeto',`
+    <div class="mfg"><label>Nome do projeto</label><input id="np-nm" class="fc" type="text" placeholder="Ex: ATS — Universidades Federais" autofocus></div>
+    <div class="mfg"><label>Demandante / Área</label><input id="np-dem" class="fc" type="text" placeholder="Ex: SEGAPE/DMAPE, SEGAPE/DIOPE"></div>
+    <div class="mfg"><label>Previsão de lançamento</label><input id="np-dt" class="fc" type="date"></div>
+    <div class="mfg">
+      <label>Cor de identificação</label>
+      <div class="sw-row" id="sw-proj">
+        ${SWATCHES.map((c,i)=>`<div class="sw${i===0?' on':''}" data-c="${c}" style="background:${c}" onclick="selSw(this,'sw-proj')"></div>`).join('')}
+      </div>
+    </div>`,
+    [{label:'Cancelar',cls:'btn',cb:closeMo},{label:'Criar no Supabase →',cls:'btn g',cb:doCreateProj}]
+  );
+}
+function selSw(el,cid){
+  document.querySelectorAll(`#${cid} .sw`).forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+}
+async function doCreateProj(){
+  const name=document.getElementById('np-nm').value.trim();
+  const dem=document.getElementById('np-dem').value.trim();
+  const dt=document.getElementById('np-dt').value;
+  const color=document.querySelector('#sw-proj .on')?.dataset.c||'#1D9E75';
+  if(!name){alert('Informe o nome.');return;}
+  const id=name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,30)+'_'+Date.now().toString(36);
+  showLd('Criando projeto…');closeMo();
+  try{
+    const p=await dbIns('projects',{id,name,color,demandante:dem||null,previsao_lancamento:dt||null,ano:new Date().getFullYear()});
+    UI.projects.push(p);
+    // criar checklists automáticos a partir dos templates
+    const templates=await dbQ('checklist_templates');
+    for(const t of templates){
+      try{await dbIns('checklists',{project_id:id,area:t.area,item:t.item,is_checked:false});}catch(e2){}
+    }
+    // criar versão inicial
+    const v=await dbIns('project_versions',{project_id:id,version_tag:'v1.0',changelog:'Versão inicial do sistema.',created_by:UI.me||'Sistema'});
+    UI.versions=[v];UI.ver=v.id;
+    UI.tasks=[];
+    await selectProj(id);
+  }catch(e){alert('Erro: '+e.message);}
+  hideLd();
+}
+
+/* --- Nova versão --- */
+function openNewVerMo(){
+  const cur=UI.versions[0];
+  openMo('Nova versão do projeto',`
+    <p style="font-size:12px;color:var(--ink2);margin-bottom:12px;line-height:1.6">A versão atual ficará arquivada no histórico. Tarefas vinculadas à versão anterior permanecem registradas.</p>
+    <div class="m2">
+      <div class="mfg"><label>Número da versão</label><input id="nv-ver" class="fc" type="text" placeholder="Ex: v2.0" value="${bumpVer(cur?.version_tag)}" autofocus></div>
+      <div class="mfg"><label>Responsável</label><select id="nv-auth" class="fc">
+        ${UI.members.map(m=>`<option${m.name===UI.me?' selected':''}>${m.name}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="mfg"><label>O que mudou nesta versão?</label><textarea id="nv-log" class="fc" placeholder="Descreva as principais alterações e motivos desta atualização…" rows="3"></textarea></div>`,
+    [{label:'Cancelar',cls:'btn',cb:closeMo},{label:'Publicar versão →',cls:'btn g',cb:doCreateVer}]
+  );
+}
+async function doCreateVer(){
+  const ver=document.getElementById('nv-ver').value.trim();
+  const auth=document.getElementById('nv-auth').value;
+  const log=document.getElementById('nv-log').value.trim();
+  if(!ver){alert('Informe o número da versão.');return;}
+  showLd('Publicando versão…');closeMo();
+  try{
+    const v=await dbIns('project_versions',{
+      project_id:UI.proj,version_tag:ver,
+      changelog:log||'—',created_by:auth,
+    });
+    UI.versions.unshift(v);
+    UI.ver=v.id;
+  }catch(e){alert('Erro: '+e.message);}
+  PDF.doc=null;PDF.proj=null;
+  hideLd();sS();showDZ();renderSB();renderTaskList();
+  if(UI.tab==='ver')renderVerView();
+}
+function bumpVer(v){
+  if(!v)return'v1.0';
+  const m=v.match(/^v?(\d+)\.(\d+)$/);
+  if(!m)return v+'.1';
+  return`v${m[1]}.${parseInt(m[2])+1}`;
+}
+
+/* --- Novo membro --- */
+function openNewMemberMo(){
+  openMo('Novo membro da equipe',`
+    <div class="m2">
+      <div class="mfg"><label>Nome</label><input id="nm-nm" class="fc" type="text" placeholder="Ex: Carla" autofocus></div>
+      <div class="mfg"><label>Cargo</label><input id="nm-role" class="fc" type="text" placeholder="Ex: Designer Sênior"></div>
+    </div>
+    <div class="mfg"><label>Área de responsabilidade</label><select id="nm-area" class="fc">
+      ${ATYPES.map(a=>`<option value="${a}">${AL[a]}</option>`).join('')}
+    </select></div>`,
+    [{label:'Cancelar',cls:'btn',cb:closeMo},{label:'Adicionar →',cls:'btn g',cb:doCreateMember}]
+  );
+}
+async function doCreateMember(){
+  const name=document.getElementById('nm-nm').value.trim();
+  const role=document.getElementById('nm-role').value.trim();
+  const area=document.getElementById('nm-area').value;
+  if(!name){alert('Informe o nome.');return;}
+  const color=AC[area]||'#444240';
+  const bgMap={design:'#EEEDFB',front:'#E0F5EE',back:'#FDF0DC',dados:'#FAECE7',texto:'#E4F1FA',sup:'#EFEDE8',aprov:'#FAE8F2'};
+  const bg=bgMap[area]||'#EFEDE8';
+  showLd('Adicionando…');closeMo();
+  try{
+    const m=await dbIns('members',{name,role:role||AL[area],area,color,bg});
+    UI.members.push(m);
+  }catch(e){alert('Erro: '+e.message);}
+  hideLd();renderSB();if(UI.tab==='cfg')renderCfgView();
+}
+
+/* --- Trocar "Eu sou" --- */
+function openMeSwitchMo(){
+  openMo('Quem está usando agora?',`
+    <p style="font-size:12px;color:var(--ink2);margin-bottom:12px">Selecione seu perfil para que suas tarefas apareçam em destaque.</p>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${UI.members.map(m=>`
+        <div onclick="UI.me='${m.name}';sS();closeMo();renderSB();renderTaskList();" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r8);border:1px solid var(--brd);cursor:pointer;${m.name===UI.me?'background:'+m.bg+';border-color:'+m.color:''}transition:all .1s">
+          <div class="av" style="width:28px;height:28px;font-size:11px;background:${m.bg};color:${m.color}">${m.name.slice(0,2)}</div>
+          <div style="flex:1"><strong style="font-size:13px">${m.name}</strong><br><span style="font-size:11px;color:var(--ink3)">${m.role||m.area||'—'}</span></div>
+          ${m.name===UI.me?`<span style="font-size:10px;color:${m.color};font-family:var(--fm)">● ativo</span>`:''}
+        </div>`).join('')}
+    </div>`,
+    [{label:'Fechar',cls:'btn',cb:closeMo}]
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════ */
+function fmtDate(iso){
+  if(!iso)return'';
+  const [y,m,d]=(iso||'').split('-');
+  if(!y||!m||!d)return iso;
+  return`${d}/${m}/${y}`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════ */
+async function boot(){
+  showLd('Conectando ao Supabase…');
+  try{
+    [UI.projects,UI.members]=await Promise.all([dbQ('projects'),dbQ('members')]);
+    // selecionar último projeto da sessão ou o primeiro
+    if(!UI.proj&&UI.projects.length)UI.proj=UI.projects[0].id;
+    if(UI.proj){
+      document.getElementById('ld-msg').textContent='Carregando projeto…';
+      [UI.tasks,UI.versions]=await Promise.all([
+        dbQ('tasks',{project_id:UI.proj}),
+        dbQ('project_versions',{project_id:UI.proj}),
+      ]);
+      if(UI.versions.length){
+        if(!UI.ver||!UI.versions.find(v=>v.id===UI.ver))UI.ver=UI.versions[0].id;
       }
-    });
+    }
+    // se nenhum membro está selecionado, tenta o primeiro
+    if(!UI.me&&UI.members.length)UI.me=UI.members[0].name;
+  }catch(e){
+    console.error('Boot error',e);
+    document.getElementById('ld-msg').textContent='Erro de conexão. Verifique o console.';
+    await new Promise(r=>setTimeout(r,2000));
   }
+  hideLd();
+  renderSB();
+  switchTab(UI.tab||'rev');
+  showDZ();
+}
 
-  init();
+boot();
 </script>
 </body>
 </html>
