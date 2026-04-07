@@ -97,7 +97,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(252,211,77,.5)}50%{box-shadow:0 0 0 4px rgba(252,211,77,0)}}
 
 /* ── SHELL ── */
-#shell{display:flex;height:100vh;overflow:hidden}
+#shell{display:flex;height:100vh;height:calc(var(--real-vh,1vh)*100);overflow:hidden}
 
 /* ── SIDEBAR ── */
 #sb{width:var(--sbw);min-width:var(--sbw);background:#0D1B2A;display:flex;flex-direction:column;z-index:30;overflow:hidden}
@@ -432,6 +432,200 @@ tr:hover td{background:var(--surf2)}
 .vm-tag{font-family:var(--fm);font-size:11px;min-width:44px;color:var(--ink)}
 .vm-meta{flex:1;font-size:11px;color:var(--ink2)}
 .vm-sel{font-size:9px;color:var(--g);font-family:var(--fm)}
+
+/* ══════════════════════════════════════════════
+   MOBILE — hamburger button
+══════════════════════════════════════════════ */
+#mob-menu-btn{
+  display:none;
+  background:none;border:none;cursor:pointer;
+  padding:6px;border-radius:var(--r4);color:rgba(255,255,255,.7);
+  flex-shrink:0;
+}
+#mob-menu-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+#mob-menu-btn svg{display:block}
+
+/* Sidebar overlay (mobile) */
+#sb-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.55);z-index:29;
+}
+
+/* Bottom navigation bar (mobile only) */
+#bot-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:60px;background:var(--surf);
+  border-top:1px solid var(--brd);
+  box-shadow:0 -2px 10px rgba(0,0,0,.08);
+  z-index:25;
+  flex-shrink:0;
+}
+.bot-nav-inner{
+  display:flex;height:100%;
+}
+.bn-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;border:none;background:none;
+  padding:6px 2px;
+  color:var(--ink3);font-family:var(--fb);font-size:9px;font-weight:500;
+  letter-spacing:.03em;text-transform:uppercase;
+  transition:color .1s;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.bn-item:active{background:var(--bg);}
+.bn-item.on{color:var(--g);}
+.bn-icon{font-size:20px;line-height:1;}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════ */
+@media (max-width:768px){
+  :root{--tbh:50px;--sbw:280px;}
+
+  /* body overflow for mobile */
+  html,body{height:100%;overflow:hidden}
+
+  /* Sidebar: off-canvas drawer */
+  #sb{
+    position:fixed;top:0;left:0;bottom:0;
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    z-index:30;
+    /* add bottom padding so content not hidden by bottom nav */
+    padding-bottom:60px;
+  }
+  #sb.open{transform:translateX(0);}
+  #sb-overlay{display:block;opacity:0;pointer-events:none;transition:opacity .28s;}
+  #sb-overlay.open{opacity:1;pointer-events:auto;}
+
+  /* Show hamburger */
+  #mob-menu-btn{display:flex;align-items:center;justify-content:center;}
+
+  /* Topbar: compact */
+  #tb{padding:0 10px;gap:7px;}
+  .tb-tabs{display:none;} /* tabs replaced by bottom nav */
+  #save-badge{font-size:10px;padding:3px 9px;}
+  .tb-sub{display:none;} /* hide subtitle on mobile */
+  .tb-ver{font-size:9px;padding:2px 7px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* Main content: account for bottom nav */
+  #main{padding-bottom:60px;}
+  #content{padding-bottom:0;}
+
+  /* Show bottom nav */
+  #bot-nav{display:block;}
+
+  /* View: revisão PDF — stack vertical */
+  #v-rev{flex-direction:column;}
+  #pdf-pane{
+    flex:none;
+    height:55vh;
+    border-right:none;
+    border-bottom:1px solid var(--brd);
+  }
+  #task-pan{
+    flex:1;
+    width:100%;
+    min-width:0;
+    height:auto;
+  }
+
+  /* PDF viewport scroll on mobile */
+  #pdf-vp{
+    padding:12px 0;
+    gap:10px;
+  }
+  .page-wrap{
+    max-width:calc(100vw - 20px);
+    overflow:hidden;
+  }
+  .page-wrap canvas{
+    width:100%!important;
+    height:auto!important;
+  }
+
+  /* Drop zone */
+  #dz{margin:12px;border-radius:var(--r12);}
+  .dzi{font-size:28px;}
+  .dzt{font-size:13px;}
+  .dzs{font-size:10px;}
+
+  /* PDF toolbar compact */
+  .pdf-bar{padding:0 8px;gap:4px;height:38px;}
+  .pbht{display:none;} /* hide hint text */
+
+  /* Comment popup: full-width at bottom */
+  #cpop{
+    position:fixed!important;
+    left:0!important;right:0!important;bottom:60px!important;top:auto!important;
+    width:100%!important;border-radius:var(--r16) var(--r16) 0 0;
+    max-height:80vh;overflow-y:auto;
+    animation:slideUp .2s ease;
+    z-index:300;
+  }
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+  /* Task panel filters: horizontal scroll */
+  .tpf{flex-wrap:nowrap;overflow-x:auto;padding:7px 10px;gap:5px;}
+  .tpf::-webkit-scrollbar{height:0;}
+  .fp{flex-shrink:0;padding:5px 12px;font-size:11px;}
+
+  /* Task cards: bigger tap targets */
+  .tc{padding:11px 13px;}
+  .chk{width:18px;height:18px;}
+  .ab{padding:5px 12px;font-size:11px;}
+  .tc-del{opacity:.3;} /* always visible on mobile, no hover */
+
+  /* Dashboard grid: single column */
+  .dash-grid,.team-grid{grid-template-columns:1fr!important;}
+  .proj-card{padding:14px 16px;}
+
+  /* Versions view */
+  .vch{flex-direction:column;gap:8px;}
+  .vcsts{flex-wrap:wrap;}
+
+  /* Indicators table: scrollable */
+  #v-ind>*{max-width:100%;}
+  .ind-wrap{overflow-x:auto;}
+  table{min-width:560px;}
+  .ind-grid{grid-template-columns:60px 1fr 1fr!important;}
+
+  /* Config */
+  #v-cfg{max-width:100%;}
+  .m2{grid-template-columns:1fr!important;}
+
+  /* Modal: fullscreen on mobile */
+  .mo-back{align-items:flex-end;}
+  .mo{
+    width:100%!important;max-width:100%!important;
+    border-radius:var(--r16) var(--r16) 0 0;
+    max-height:90vh;
+  }
+
+  /* Version menu: bottom sheet */
+  .ver-menu{
+    position:fixed!important;
+    left:0!important;right:0!important;bottom:60px!important;top:auto!important;
+    border-radius:var(--r16) var(--r16) 0 0;
+    min-width:0!important;width:100%;
+  }
+
+  /* Checklist items: bigger tap */
+  .chk-item{padding:13px 16px;}
+  .ci-box{width:20px;height:20px;}
+
+  /* Button bar */
+  #btn-upload{font-size:11px;padding:5px 9px;}
+}
+
+@media (max-width:420px){
+  .login-card{padding:28px 22px;}
+  .login-names h1{font-size:17px;}
+  .tb-ver{display:none;} /* hide version chip on very small screens */
+  .bn-item{font-size:8px;}
+}
 </style>
 </head>
 <body>
@@ -494,6 +688,9 @@ tr:hover td{background:var(--surf2)}
 <!-- ════ SHELL ════ -->
 <div id="shell" class="hide">
 
+<!-- Sidebar overlay for mobile -->
+<div id="sb-overlay" onclick="closeSidebar()"></div>
+
 <div id="sb">
   <div class="sb-top">
     <div class="sb-top-row">
@@ -518,6 +715,14 @@ tr:hover td{background:var(--surf2)}
 <div id="main">
   <div id="tb">
     <div class="tb-stripe"></div>
+    <!-- hamburger: mobile only -->
+    <button id="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <rect x="2" y="4" width="16" height="2" rx="1"/>
+        <rect x="2" y="9" width="16" height="2" rx="1"/>
+        <rect x="2" y="14" width="16" height="2" rx="1"/>
+      </svg>
+    </button>
     <div class="tb-dot" id="tb-dot"></div>
     <div class="tb-ti"><span id="tb-title">Dashboard</span><small id="tb-sub"></small></div>
     <div class="tb-ver" id="tb-ver" onclick="toggleVerMenu()" style="display:none">— · versão</div>
@@ -581,6 +786,28 @@ tr:hover td{background:var(--surf2)}
     <div id="v-cfg"  class="hide"></div>
   </div>
 </div>
+
+<!-- Bottom navigation bar (mobile) -->
+<nav id="bot-nav" aria-label="Navegação principal">
+  <div class="bot-nav-inner">
+    <button class="bn-item" data-bn="dash" onclick="botNav('dash')">
+      <span class="bn-icon">📈</span>Dashboard
+    </button>
+    <button class="bn-item" data-bn="rev" onclick="botNav('rev')">
+      <span class="bn-icon">📄</span>Revisão
+    </button>
+    <button class="bn-item" data-bn="chk" onclick="botNav('chk')">
+      <span class="bn-icon">✅</span>Checklist
+    </button>
+    <button class="bn-item" data-bn="ind" onclick="botNav('ind')">
+      <span class="bn-icon">💾</span>Lake
+    </button>
+    <button class="bn-item" data-bn="ver" onclick="botNav('ver')">
+      <span class="bn-icon">🕐</span>Versões
+    </button>
+  </div>
+</nav>
+
 </div>
 
 <div id="ld" class="hide"><div class="spin"></div><p id="ld-msg">Carregando…</p></div>
@@ -607,7 +834,7 @@ tr:hover td{background:var(--surf2)}
   5. Cole aqui substituindo COLE_SUA_ANON_KEY_AQUI
   =====================================================================
 */
-const SUPA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqbmVpdXBjdXFpcWtrbHRndmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTY3NDAsImV4cCI6MjA5MTA3Mjc0MH0.eT_hopB6dcr-LPZwvuFpuExnR4vPehIcxcLSbagGxq0';
+const SUPA_ANON_KEY = 'COLE_SUA_ANON_KEY_AQUI';
 
 const SB = window.supabase.createClient(
   'https://ujneiupcuqiqkkltgvkv.supabase.co',
@@ -2014,7 +2241,98 @@ function fmtDate(iso){
   return`${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-/* Topbar PDF pane IDs requeridos para revisar */
+/* ═══════════════════════════════════════════════
+   MOBILE — Sidebar drawer
+═══════════════════════════════════════════════ */
+function isMobile(){return window.innerWidth<=768;}
+
+function openSidebar(){
+  document.getElementById('sb').classList.add('open');
+  document.getElementById('sb-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeSidebar(){
+  document.getElementById('sb').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function toggleSidebar(){
+  const sb=document.getElementById('sb');
+  sb.classList.contains('open')?closeSidebar():openSidebar();
+}
+
+/* Close sidebar automatically when a project or nav item is tapped on mobile */
+const _origAttachSBEv=attachSBEv;
+attachSBEv=function(){
+  _origAttachSBEv();
+  if(isMobile()){
+    document.querySelectorAll('[data-goto],[data-proj]').forEach(el=>{
+      el.addEventListener('click',()=>setTimeout(closeSidebar,80));
+    });
+  }
+};
+
+/* ═══════════════════════════════════════════════
+   MOBILE — Bottom nav
+═══════════════════════════════════════════════ */
+function botNav(tab){
+  if(!G.proj&&tab!=='dash'){
+    /* no project selected — open sidebar to pick one */
+    openSidebar();
+    return;
+  }
+  switchTab(tab);
+}
+
+/* Keep bottom nav active state in sync with tab changes */
+function updateBotNav(){
+  document.querySelectorAll('.bn-item').forEach(b=>{
+    b.classList.toggle('on',b.dataset.bn===G.tab);
+  });
+}
+
+/* Patch switchTab to also update bot nav */
+const _origSwitchTab=switchTab;
+switchTab=function(tab){
+  _origSwitchTab(tab);
+  updateBotNav();
+  /* auto-close sidebar on mobile after tab switch */
+  if(isMobile())closeSidebar();
+};
+
+/* ═══════════════════════════════════════════════
+   MOBILE — Touch enhancements
+═══════════════════════════════════════════════ */
+
+/* Prevent double-tap zoom on buttons */
+document.querySelectorAll('button,.fp,.si,.bn-item,.chk-item,.tc').forEach(el=>{
+  el.addEventListener('touchend',e=>{e.preventDefault();el.click();},{passive:false});
+});
+
+/* Swipe right to open sidebar, swipe left to close */
+(()=>{
+  let tx0=0,ty0=0;
+  document.addEventListener('touchstart',e=>{
+    tx0=e.touches[0].clientX;ty0=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx0;
+    const dy=Math.abs(e.changedTouches[0].clientY-ty0);
+    if(dy>40)return; // mostly vertical swipe, ignore
+    if(dx>60&&tx0<30&&isMobile())openSidebar();  // swipe right from left edge
+    if(dx<-60&&isMobile())closeSidebar();        // swipe left to close
+  },{passive:true});
+})();
+
+/* Viewport height fix for mobile browsers (address bar changes vh) */
+function setVH(){
+  document.documentElement.style.setProperty('--real-vh',window.innerHeight*0.01+'px');
+}
+setVH();
+window.addEventListener('resize',setVH,{passive:true});
+
+/* Init bottom nav state */
+updateBotNav();
 </script>
 
 
