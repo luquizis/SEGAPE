@@ -1,1088 +1,798 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEGAPE - Sistema de Gestão de Projetos</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEGAPE - Gestão de Projetos</title>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-        }
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-        .app-container {
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f3f4f6; color: #111; }
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    .sidebar { background: #111827; color: #fff; padding: 20px; }
+    .sidebar h2 { margin-bottom: 8px; }
+    .sidebar p { font-size: 13px; opacity: .85; margin-bottom: 14px; }
+    .nav button {
+      display: block; width: 100%; margin-bottom: 8px; padding: 10px;
+      border: none; border-radius: 8px; background: #1f2937; color: #fff; cursor: pointer; text-align: left;
+    }
+    .nav button.active { background: #2563eb; }
+    .logout { margin-top: 12px; background: #dc2626 !important; }
 
-        /* Sidebar */
-        .sidebar {
-            width: 280px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
+    .main { padding: 20px; }
+    .card {
+      background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    input, select {
+      padding: 10px; border: 1px solid #ddd; border-radius: 8px; min-width: 220px;
+    }
+    button.action {
+      padding: 10px 14px; border: none; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer;
+    }
+    button.secondary { background: #6b7280; }
 
-        .logo {
-            padding: 30px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 20px;
-        }
+    .list-item {
+      padding: 10px; border: 1px solid #ececec; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+    }
+    .list-item:hover { background: #f9fafb; }
 
-        .logo h2 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
+    .muted { color: #6b7280; font-size: 13px; }
+    .ok { color: #16a34a; }
+    .err { color: #dc2626; }
 
-        .logo p {
-            font-size: 12px;
-            opacity: 0.7;
-        }
+    #pdf-container { margin-top: 12px; display: flex; flex-direction: column; gap: 16px; align-items: start; }
+    .pdf-page { position: relative; box-shadow: 0 2px 10px rgba(0,0,0,.2); background: #fff; cursor: crosshair; }
+    .pin {
+      position: absolute; width: 16px; height: 16px; background: #ef4444;
+      border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%);
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    .pin.done { background: #22c55e; }
 
-        .nav {
-            flex: 1;
-            padding: 0 15px;
-        }
+    .hidden { display: none; }
 
-        .nav div {
-            padding: 12px 15px;
-            margin: 5px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 15px;
-        }
-
-        .nav div:hover {
-            background: rgba(255,255,255,0.1);
-            transform: translateX(5px);
-        }
-
-        .nav div.active {
-            background: #2B7FDD;
-            color: white;
-            font-weight: 500;
-        }
-
-        .sidebar-footer {
-            padding: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .btn-new-project {
-            width: 100%;
-            padding: 12px;
-            background: #2B7FDD;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-
-        .btn-new-project:hover {
-            background: #1e5fa8;
-            transform: translateY(-2px);
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            background: #f8f9fa;
-        }
-
-        .content {
-            padding: 30px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Cards */
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.3s;
-        }
-
-        .card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            transform: translateY(-2px);
-        }
-
-        .card h1, .card h2, .card h3 {
-            margin-bottom: 16px;
-            color: #1a1a2e;
-        }
-
-        /* Grids */
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        /* Buttons */
-        button {
-            padding: 10px 20px;
-            background: #2B7FDD;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            background: #1e5fa8;
-            transform: translateY(-1px);
-        }
-
-        button.secondary {
-            background: #6c757d;
-        }
-
-        button.secondary:hover {
-            background: #5a6268;
-        }
-
-        /* Project Cards */
-        .project-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .project-badge {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .project-stats {
-            display: flex;
-            gap: 16px;
-        }
-
-        .stat {
-            font-size: 13px;
-            color: #666;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            border-bottom-color: #2B7FDD;
-            color: #2B7FDD;
-            font-weight: 500;
-        }
-
-        /* PDF Viewer */
-        #pdf-container {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .pdf-page {
-            position: relative;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            background: white;
-            cursor: crosshair;
-        }
-
-        .pin {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #ff4444;
-            border: 2px solid white;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .pin:hover {
-            transform: translate(-50%, -50%) scale(1.2);
-        }
-
-        .pin.resolved {
-            background: #00c853;
-        }
-
-        /* Task Items */
-        .task-item {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .task-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-
-        /* Checklist */
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .checklist-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        /* Loading & Error */
-        .loading, .error {
-            text-align: center;
-            padding: 40px;
-            font-size: 18px;
-        }
-
-        .error {
-            color: #d32f2f;
-            background: #ffebee;
-            border-radius: 12px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: auto;
-            }
-            
-            .nav {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 5px;
-            }
-            
-            .nav div {
-                flex: 1;
-                text-align: center;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-            
-            .grid-2, .grid-3 {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-    </style>
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 2; }
+    }
+  </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="logo">
-                <h2>📊 SEGAPE</h2>
-                <p>Gestão de Projetos</p>
-            </div>
-            
-            <div class="nav">
-                <div id="nav-dash" class="active">
-                    📈 Dashboard
-                </div>
-                <div id="nav-projects">
-                    📁 Projetos
-                </div>
-                <div id="nav-checklist">
-                    ✅ Checklist
-                </div>
-                <div id="nav-datalake">
-                    💾 Data Lake
-                </div>
-                <div id="nav-team">
-                    👥 Equipe
-                </div>
-            </div>
-            
-            <div class="sidebar-footer">
-                <button class="btn-new-project">
-                    ➕ Novo Projeto
-                </button>
-            </div>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="main-content">
-            <div id="main" class="content">
-                <div class="loading">🔌 Carregando sistema...</div>
-            </div>
-        </div>
+<div class="app">
+  <aside class="sidebar">
+    <h2>📊 SEGAPE</h2>
+    <p id="user-label">Não autenticado</p>
+
+    <div class="nav">
+      <button id="nav-auth" class="active">🔐 Login</button>
+      <button id="nav-dash">📈 Dashboard</button>
+      <button id="nav-project">📁 Projeto Atual</button>
+      <button id="nav-checklist">✅ Checklist</button>
+      <button id="nav-indicators">💾 Indicadores</button>
+      <button id="btn-logout" class="logout hidden">Sair</button>
     </div>
-    
-    <script>
-    // ============================================
-    // 🔐 CONFIGURAÇÃO DO SUPABASE
-    // ============================================
-    const SUPABASE_URL = 'https://zvfwjuooztjeuokesfek.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2ZndqdW9venRqZXVva2VzZmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODgxNjQsImV4cCI6MjA5MTA2NDE2NH0.9M6w9bnLN2DbtGGHH3yn6dYXYvupavYjrg3D1fQGE00';
+  </aside>
 
-    // Criar cliente Supabase
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <main class="main">
+    <!-- AUTH -->
+    <section id="view-auth" class="card">
+      <h3>Login por e-mail</h3>
+      <div class="row" style="margin-top:10px;">
+        <input id="auth-email" type="email" placeholder="seu@email.com" />
+        <input id="auth-password" type="password" placeholder="senha (mín. 6)" />
+        <button class="action" id="btn-signup">Criar conta</button>
+        <button class="action secondary" id="btn-login">Entrar</button>
+      </div>
+      <p id="auth-msg" class="muted" style="margin-top:10px;">Aguardando...</p>
+    </section>
 
-    // Configurar PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    <!-- DASHBOARD -->
+    <section id="view-dash" class="card hidden">
+      <h3>Projetos</h3>
+      <div class="row" style="margin: 10px 0;">
+        <input id="new-project-id" placeholder="id projeto (ex: atm)" />
+        <input id="new-project-name" placeholder="nome projeto" />
+        <input id="new-project-color" placeholder="#2B7FDD" />
+        <button class="action" id="btn-create-project">Criar projeto</button>
+      </div>
+      <div id="projects-list"></div>
+    </section>
 
-    // ============================================
-    // ESTADO GLOBAL
-    // ============================================
-    let currentView = 'dash';
-    let currentProject = null;
-    let currentVersion = null;
-    let projects = [];
-    let members = [];
-    let tasks = [];
-    let versions = [];
-    let checklists = [];
-    let indicators = [];
-    let pdfDoc = null;
-    let connectionError = null;
+    <!-- PROJETO -->
+    <section id="view-project" class="card hidden">
+      <h3>Projeto atual: <span id="current-project-label">-</span></h3>
 
-    // ============================================
-    // FUNÇÕES DE CONEXÃO E CARREGAMENTO
-    // ============================================
+      <div class="card" style="margin-top:12px;">
+        <h4>Versões</h4>
+        <div class="row" style="margin-top:10px;">
+          <input id="new-version-tag" placeholder="ex: v1.0" />
+          <button class="action" id="btn-create-version">Nova versão</button>
+        </div>
+        <div id="versions-list" style="margin-top:10px;"></div>
+      </div>
 
-    async function testConnection() {
-        try {
-            const { data, error } = await supabaseClient.from('projects').select('count', { count: 'exact', head: true });
-            if (error) throw error;
-            console.log('✅ Conexão com Supabase estabelecida!');
-            connectionError = null;
-            return true;
-        } catch (error) {
-            console.error('❌ Erro de conexão:', error);
-            connectionError = error.message;
-            return false;
-        }
+      <div class="card">
+        <h4>PDF da versão atual: <span id="current-version-label">-</span></h4>
+        <div class="row" style="margin-top:10px;">
+          <input id="pdf-upload" type="file" accept=".pdf" />
+          <button class="action secondary" id="btn-reload-pdf">Recarregar PDF</button>
+        </div>
+        <p class="muted" style="margin-top:8px;">Clique no PDF para criar tarefa (pin).</p>
+        <div id="pdf-container"></div>
+      </div>
+
+      <div class="card">
+        <h4>Tarefas da versão</h4>
+        <div id="tasks-list"></div>
+      </div>
+    </section>
+
+    <!-- CHECKLIST -->
+    <section id="view-checklist" class="card hidden">
+      <h3>Checklist do projeto atual</h3>
+      <p class="muted">Projeto: <span id="checklist-project-label">-</span></p>
+      <div id="checklist-list" style="margin-top:10px;"></div>
+    </section>
+
+    <!-- INDICATORS -->
+    <section id="view-indicators" class="card hidden">
+      <h3>Indicadores (Data Lake)</h3>
+      <p class="muted">Projeto: <span id="indicator-project-label">-</span></p>
+      <div class="row" style="margin-top:10px;">
+        <input id="indicator-name" placeholder="Nome do indicador" />
+        <input id="indicator-page" placeholder="Página (número)" />
+        <input id="indicator-sheet" placeholder="Planilha/Data lake" />
+        <button class="action" id="btn-add-indicator">Adicionar</button>
+      </div>
+      <div id="indicators-list" style="margin-top:10px;"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // =========================
+  // CONFIG
+  // =========================
+  const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+  const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_PUBLICA';
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // =========================
+  // STATE
+  // =========================
+  let session = null;
+  let projects = [];
+  let versions = [];
+  let tasks = [];
+  let checklists = [];
+  let indicators = [];
+  let currentProjectId = null;
+  let currentVersionId = null;
+  let currentPdfUrl = null;
+  let pdfDoc = null;
+
+  // =========================
+  // ELEMENTS
+  // =========================
+  const el = {
+    userLabel: document.getElementById('user-label'),
+    authMsg: document.getElementById('auth-msg'),
+
+    navAuth: document.getElementById('nav-auth'),
+    navDash: document.getElementById('nav-dash'),
+    navProject: document.getElementById('nav-project'),
+    navChecklist: document.getElementById('nav-checklist'),
+    navIndicators: document.getElementById('nav-indicators'),
+    btnLogout: document.getElementById('btn-logout'),
+
+    viewAuth: document.getElementById('view-auth'),
+    viewDash: document.getElementById('view-dash'),
+    viewProject: document.getElementById('view-project'),
+    viewChecklist: document.getElementById('view-checklist'),
+    viewIndicators: document.getElementById('view-indicators'),
+
+    authEmail: document.getElementById('auth-email'),
+    authPassword: document.getElementById('auth-password'),
+    btnSignup: document.getElementById('btn-signup'),
+    btnLogin: document.getElementById('btn-login'),
+
+    newProjectId: document.getElementById('new-project-id'),
+    newProjectName: document.getElementById('new-project-name'),
+    newProjectColor: document.getElementById('new-project-color'),
+    btnCreateProject: document.getElementById('btn-create-project'),
+    projectsList: document.getElementById('projects-list'),
+
+    currentProjectLabel: document.getElementById('current-project-label'),
+    checklistProjectLabel: document.getElementById('checklist-project-label'),
+    indicatorProjectLabel: document.getElementById('indicator-project-label'),
+
+    newVersionTag: document.getElementById('new-version-tag'),
+    btnCreateVersion: document.getElementById('btn-create-version'),
+    versionsList: document.getElementById('versions-list'),
+    currentVersionLabel: document.getElementById('current-version-label'),
+
+    pdfUpload: document.getElementById('pdf-upload'),
+    btnReloadPdf: document.getElementById('btn-reload-pdf'),
+    pdfContainer: document.getElementById('pdf-container'),
+
+    tasksList: document.getElementById('tasks-list'),
+
+    checklistList: document.getElementById('checklist-list'),
+
+    indicatorName: document.getElementById('indicator-name'),
+    indicatorPage: document.getElementById('indicator-page'),
+    indicatorSheet: document.getElementById('indicator-sheet'),
+    btnAddIndicator: document.getElementById('btn-add-indicator'),
+    indicatorsList: document.getElementById('indicators-list'),
+  };
+
+  // =========================
+  // HELPERS
+  // =========================
+  function setAuthMsg(msg, isError = false) {
+    el.authMsg.textContent = msg;
+    el.authMsg.className = isError ? 'err' : 'ok';
+  }
+
+  function setActiveNav(btn) {
+    [el.navAuth, el.navDash, el.navProject, el.navChecklist, el.navIndicators].forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function showView(name) {
+    el.viewAuth.classList.add('hidden');
+    el.viewDash.classList.add('hidden');
+    el.viewProject.classList.add('hidden');
+    el.viewChecklist.classList.add('hidden');
+    el.viewIndicators.classList.add('hidden');
+
+    if (name === 'auth') el.viewAuth.classList.remove('hidden');
+    if (name === 'dash') el.viewDash.classList.remove('hidden');
+    if (name === 'project') el.viewProject.classList.remove('hidden');
+    if (name === 'checklist') el.viewChecklist.classList.remove('hidden');
+    if (name === 'indicators') el.viewIndicators.classList.remove('hidden');
+  }
+
+  function requireLogin() {
+    if (!session) {
+      alert('Faça login primeiro.');
+      setActiveNav(el.navAuth);
+      showView('auth');
+      return false;
+    }
+    return true;
+  }
+
+  // =========================
+  // AUTH
+  // =========================
+  async function doSignUp() {
+    const email = el.authEmail.value.trim();
+    const password = el.authPassword.value.trim();
+    if (!email || !password) return setAuthMsg('Informe e-mail e senha.', true);
+
+    const { error } = await sb.auth.signUp({ email, password });
+    if (error) return setAuthMsg(error.message, true);
+    setAuthMsg('Conta criada. Verifique o e-mail (se confirmação estiver ativa).');
+  }
+
+  async function doLogin() {
+    const email = el.authEmail.value.trim();
+    const password = el.authPassword.value.trim();
+    if (!email || !password) return setAuthMsg('Informe e-mail e senha.', true);
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return setAuthMsg(error.message, true);
+
+    await refreshSession();
+    setAuthMsg('Login realizado com sucesso.');
+    await loadProjects();
+    setActiveNav(el.navDash);
+    showView('dash');
+  }
+
+  async function doLogout() {
+    await sb.auth.signOut();
+    await refreshSession();
+    setActiveNav(el.navAuth);
+    showView('auth');
+  }
+
+  async function refreshSession() {
+    const { data } = await sb.auth.getSession();
+    session = data.session || null;
+
+    if (session?.user) {
+      el.userLabel.textContent = `👤 ${session.user.email}`;
+      el.btnLogout.classList.remove('hidden');
+    } else {
+      el.userLabel.textContent = 'Não autenticado';
+      el.btnLogout.classList.add('hidden');
+    }
+  }
+
+  // =========================
+  // PROJECTS
+  // =========================
+  async function loadProjects() {
+    if (!requireLogin()) return;
+    const { data, error } = await sb.from('projects').select('*').order('name');
+    if (error) return alert('Erro projetos: ' + error.message);
+
+    projects = data || [];
+    renderProjects();
+  }
+
+  function renderProjects() {
+    if (projects.length === 0) {
+      el.projectsList.innerHTML = `<p class="muted">Nenhum projeto.</p>`;
+      return;
     }
 
-    async function loadProjects() {
-        try {
-            const { data, error } = await supabaseClient.from('projects').select('*').order('name');
-            if (error) throw error;
-            projects = data || [];
-            
-            try {
-                const { data: pendencies } = await supabaseClient.from('global_pendencies').select('*');
-                window.pendencies = pendencies || [];
-            } catch (vError) {
-                console.warn('View global_pendencies não encontrada');
-                window.pendencies = [];
-            }
-            
-            console.log(`📁 ${projects.length} projetos carregados`);
-            return true;
-        } catch (error) {
-            console.error('Erro ao carregar projetos:', error);
-            connectionError = error.message;
-            return false;
-        }
+    el.projectsList.innerHTML = projects.map(p => `
+      <div class="list-item" data-project-id="${p.id}">
+        <strong>${p.name}</strong> <span class="muted">(${p.id})</span>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('[data-project-id]').forEach(item => {
+      item.addEventListener('click', async () => {
+        currentProjectId = item.getAttribute('data-project-id');
+        currentVersionId = null;
+        currentPdfUrl = null;
+        el.currentProjectLabel.textContent = currentProjectId;
+        el.checklistProjectLabel.textContent = currentProjectId;
+        el.indicatorProjectLabel.textContent = currentProjectId;
+        el.currentVersionLabel.textContent = '-';
+        el.pdfContainer.innerHTML = '';
+        await loadVersions();
+        await loadChecklists();
+        await loadIndicators();
+        setActiveNav(el.navProject);
+        showView('project');
+      });
+    });
+  }
+
+  async function createProject() {
+    if (!requireLogin()) return;
+    const id = el.newProjectId.value.trim().toLowerCase();
+    const name = el.newProjectName.value.trim();
+    const color = el.newProjectColor.value.trim() || '#2B7FDD';
+
+    if (!id || !name) return alert('Informe ID e nome do projeto.');
+
+    const { error } = await sb.from('projects').insert([{
+      id, name, color, created_at: new Date().toISOString()
+    }]);
+
+    if (error) return alert('Erro criar projeto: ' + error.message);
+
+    // adiciona o próprio usuário no projeto
+    await sb.rpc('add_me_to_project', { p_project_id: id, p_role: 'owner' });
+
+    el.newProjectId.value = '';
+    el.newProjectName.value = '';
+    el.newProjectColor.value = '';
+    await loadProjects();
+  }
+
+  // =========================
+  // VERSIONS
+  // =========================
+  async function loadVersions() {
+    if (!currentProjectId) return;
+    const { data, error } = await sb.from('project_versions')
+      .select('*')
+      .eq('project_id', currentProjectId)
+      .order('created_at', { ascending: false });
+
+    if (error) return alert('Erro versões: ' + error.message);
+
+    versions = data || [];
+    renderVersions();
+  }
+
+  function renderVersions() {
+    if (versions.length === 0) {
+      el.versionsList.innerHTML = `<p class="muted">Nenhuma versão.</p>`;
+      return;
     }
 
-    async function loadMembers() {
-        try {
-            const { data, error } = await supabaseClient.from('members').select('*').order('name');
-            if (error) throw error;
-            members = data || [];
-            console.log(`👥 ${members.length} membros carregados`);
-            return true;
-        } catch (error) {
-            console.error('Erro ao carregar membros:', error);
-            return false;
-        }
-    }
+    el.versionsList.innerHTML = versions.map(v => `
+      <div class="list-item" data-version-id="${v.id}">
+        <strong>${v.version_tag}</strong>
+        <span class="muted"> | ${new Date(v.created_at).toLocaleString()}</span>
+        ${v.pdf_url ? '<span class="ok"> | 📎 PDF</span>' : '<span class="muted"> | sem PDF</span>'}
+      </div>
+    `).join('');
 
-    async function loadVersions(projectId) {
-        if (!projectId) return false;
-        try {
-            const { data, error } = await supabaseClient.from('project_versions')
-                .select('*')
-                .eq('project_id', projectId)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            versions = data || [];
-            console.log(`📄 ${versions.length} versões carregadas`);
-            return true;
-        } catch (error) {
-            console.error('Erro ao carregar versões:', error);
-            return false;
-        }
-    }
-
-    async function loadTasks() {
-        if (!currentVersion) return;
-        try {
-            const { data, error } = await supabaseClient.from('tasks')
-                .select('*')
-                .eq('version_id', currentVersion)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            tasks = data || [];
-            renderPins();
-            return true;
-        } catch (error) {
-            console.error('Erro ao carregar tarefas:', error);
-            return false;
-        }
-    }
-
-    async function loadChecklists(projectId) {
-        if (!projectId) return false;
-        try {
-            const { data, error } = await supabaseClient.from('checklists')
-                .select('*')
-                .eq('project_id', projectId);
-            if (error) throw error;
-            checklists = data || [];
-            console.log(`✅ ${checklists.length} itens de checklist carregados`);
-            return true;
-        } catch (error) {
-            console.error('Erro ao carregar checklists:', error);
-            return false;
-        }
-    }
-
-    async function loadIndicators(projectId) {
-        if (!projectId) return false;
-        try {
-            const { data, error } = await supabaseClient.from('project_indicators')
-                .select('*')
-                .eq('project_id', projectId);
-            if (error) throw error;
-            indicators = data || [];
-            console.log(`📊 ${indicators.length} indicadores carregados`);
-            return true;
-        } catch (error) {
-            console.error('Erro ao carregar indicadores:', error);
-            return false;
-        }
-    }
-
-    // ============================================
-    // FUNÇÕES DE CRIAÇÃO
-    // ============================================
-
-    async function createProject() {
-        const name = prompt('Nome do projeto:');
-        if (!name) return;
-        const id = prompt('ID do projeto (ex: novo_projeto):');
-        if (!id) return;
-        const color = prompt('Cor do projeto (ex: #1D9E75):', '#1D9E75');
-        
-        const { error } = await supabaseClient.from('projects').insert([{
-            id: id.toLowerCase(),
-            name: name,
-            color: color,
-            created_at: new Date()
-        }]);
-        
-        if (error) {
-            alert('Erro: ' + error.message);
-        } else {
-            await loadProjects();
-            render();
-        }
-    }
-
-    async function createVersion() {
-        if (!currentProject) {
-            alert('Selecione um projeto primeiro');
-            return;
-        }
-        
-        const versionTag = prompt('Tag da versão (ex: v1.0, 2024-03-20):');
-        if (!versionTag) return;
-        
-        const { data, error } = await supabaseClient.from('project_versions').insert([{
-            project_id: currentProject,
-            version_tag: versionTag,
-            created_by: 'Usuário',
-            created_at: new Date()
-        }]).select();
-        
-        if (error) {
-            alert('Erro: ' + error.message);
-        } else {
-            await loadVersions(currentProject);
-            if (data && data[0]) {
-                currentVersion = data[0].id;
-            }
-            render();
-        }
-    }
-
-    async function createTask(x, y, page) {
-        const taskText = prompt('Descrição da tarefa:');
-        if (!taskText) return;
-        
-        const area = prompt('Área (design/front/back/dados/sup/aprov):', 'design');
-        const responsible = prompt('Responsável:', '');
-        const priority = prompt('Prioridade (baixa/media/alta/urgente):', 'media');
-        const dueDate = prompt('Data limite (YYYY-MM-DD):', '');
-        
-        const { error } = await supabaseClient.from('tasks').insert([{
-            project_id: currentProject,
-            version_id: currentVersion,
-            task_text: taskText,
-            type: 'tarefa',
-            area: area,
-            responsible: responsible,
-            page: page,
-            x_pos: x,
-            y_pos: y,
-            due_date: dueDate || null,
-            priority: priority,
-            is_done: false,
-            created_by: 'Usuário',
-            created_at: new Date()
-        }]);
-        
-        if (error) {
-            alert('Erro: ' + error.message);
-        } else {
-            await loadTasks();
-            renderPins();
-        }
-    }
-
-    async function toggleTask(taskId, currentStatus) {
-        const { error } = await supabaseClient.from('tasks')
-            .update({ 
-                is_done: !currentStatus, 
-                checked_at: new Date(),
-                checked_by: 'Usuário'
-            })
-            .eq('id', taskId);
-        
-        if (!error) {
-            await loadTasks();
-            renderPins();
-        }
-    }
-
-    async function toggleChecklist(itemId, currentStatus) {
-        const { error } = await supabaseClient.from('checklists')
-            .update({ 
-                is_checked: !currentStatus, 
-                checked_at: new Date(),
-                checked_by: 'Usuário'
-            })
-            .eq('id', itemId);
-        
-        if (!error) {
-            await loadChecklists(currentProject);
-            render();
-        }
-    }
-
-    async function uploadPDF(file) {
-        if (!currentVersion) {
-            alert('Crie uma versão primeiro!');
-            return;
-        }
-        
-        const fileName = `${currentProject}/${currentVersion}/${file.name}`;
-        const { error } = await supabaseClient.storage
-            .from('pdfs')
-            .upload(fileName, file, { upsert: true });
-        
-        if (error) {
-            alert('Erro no upload: ' + error.message);
-            return;
-        }
-        
-        const { data: publicUrl } = supabaseClient.storage
-            .from('pdfs')
-            .getPublicUrl(fileName);
-        
-        await supabaseClient.from('project_versions')
-            .update({ pdf_url: publicUrl.publicUrl })
-            .eq('id', currentVersion);
-        
-        await loadPDF(publicUrl.publicUrl);
-    }
-
-    async function loadPDF(url) {
-        if (!url) return;
-        try {
-            const loadingTask = pdfjsLib.getDocument(url);
-            pdfDoc = await loadingTask.promise;
-            renderPDF();
-        } catch (error) {
-            console.error('Erro ao carregar PDF:', error);
-            const container = document.getElementById('pdf-container');
-            if (container) {
-                container.innerHTML = '<p style="color:white;padding:20px">❌ Erro ao carregar PDF</p>';
-            }
-        }
-    }
-
-    // ============================================
-    // RENDERIZAÇÃO
-    // ============================================
-
-    async function renderPDF() {
-        const container = document.getElementById('pdf-container');
-        if (!container || !pdfDoc) return;
-        
-        container.innerHTML = '';
-        
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
-            const page = await pdfDoc.getPage(i);
-            const viewport = page.getViewport({ scale: 1.2 });
-            
-            const pageDiv = document.createElement('div');
-            pageDiv.className = 'pdf-page';
-            pageDiv.dataset.page = i;
-            pageDiv.style.position = 'relative';
-            pageDiv.style.width = viewport.width + 'px';
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            canvas.style.display = 'block';
-            
-            await page.render({
-                canvasContext: canvas.getContext('2d'),
-                viewport: viewport
-            }).promise;
-            
-            pageDiv.appendChild(canvas);
-            
-            pageDiv.onclick = (e) => {
-                const rect = pageDiv.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width;
-                const y = (e.clientY - rect.top) / rect.height;
-                if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
-                    createTask(x, y, i);
-                }
-            };
-            
-            container.appendChild(pageDiv);
-        }
-        
-        renderPins();
-    }
-
-    function renderPins() {
-        document.querySelectorAll('.pin').forEach(p => p.remove());
-        
-        tasks.forEach(task => {
-            const pageDiv = document.querySelector(`.pdf-page[data-page='${task.page}']`);
-            if (!pageDiv) return;
-            
-            const pin = document.createElement('div');
-            pin.className = `pin ${task.is_done ? 'resolved' : ''}`;
-            pin.style.left = (task.x_pos * 100) + '%';
-            pin.style.top = (task.y_pos * 100) + '%';
-            
-            pin.onclick = (e) => {
-                e.stopPropagation();
-                const msg = `📋 ${task.task_text}\n\n👤 Responsável: ${task.responsible || 'N/A'}\n🎯 Prioridade: ${task.priority}\n✅ Status: ${task.is_done ? 'Concluída' : 'Pendente'}\n\nMarcar como ${task.is_done ? 'pendente' : 'concluída'}?`;
-                if (confirm(msg)) {
-                    toggleTask(task.id, task.is_done);
-                }
-            };
-            
-            pageDiv.appendChild(pin);
-        });
-    }
-
-    // ============================================
-    // VIEWS
-    // ============================================
-
-    function renderDashboard() {
-        if (connectionError) {
-            return `<div class="error">❌ Erro de conexão com o Supabase: ${connectionError}<br><br>Verifique suas credenciais e se o banco de dados está configurado corretamente.</div>`;
-        }
-        
-        if (projects.length === 0) {
-            return `<div class="card">📁 Nenhum projeto encontrado. Clique em "Novo Projeto" para começar.</div>`;
-        }
-        
-        const pendingData = window.pendencies || [];
-        
-        return `
-            <h1 style="margin-bottom: 24px;">📈 Dashboard SEGAPE</h1>
-            
-            <div class="grid-2">
-                ${projects.map(p => {
-                    const stats = pendingData.find(pd => pd && pd.project_id === p.id) || {};
-                    return `
-                        <div class="card" data-project-id="${p.id}" style="cursor: pointer;">
-                            <div class="project-card">
-                                <div>
-                                    <span class="project-badge" style="background: ${p.color || '#ccc'}"></span>
-                                    <strong style="font-size: 18px;">${p.name}</strong>
-                                </div>
-                                <div class="project-stats">
-                                    <div class="stat">📋 ${stats.pending_tasks || 0} pendentes</div>
-                                    <div class="stat">⚠️ ${stats.overdue_tasks || 0} atrasadas</div>
-                                </div>
-                            </div>
-                            <div style="margin-top: 12px; font-size: 13px; color: #666;">
-                                Ano: ${p.ano || 'N/A'} | Previsão: ${p.previsao_lancamento || 'N/A'}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-            
-            <div class="card">
-                <h3>📊 Estatísticas Gerais</h3>
-                <div class="grid-2">
-                    <div>
-                        <strong>Total de Projetos:</strong> ${projects.length}<br>
-                        <strong>Total de Tarefas:</strong> ${pendingData.reduce((sum, p) => sum + (p.total_tasks || 0), 0)}<br>
-                        <strong>Tarefas Pendentes:</strong> ${pendingData.reduce((sum, p) => sum + (p.pending_tasks || 0), 0)}
-                    </div>
-                    <div>
-                        <strong>Equipe Total:</strong> ${members.length}<br>
-                        <strong>Checklists:</strong> ${checklists.length}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function renderProjectView() {
-        const project = projects.find(p => p.id === currentProject);
-        
-        return `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <button class="back-to-dash">← Voltar</button>
-                    <h1 style="display: inline-block; margin-left: 16px;">📁 ${project?.name || currentProject}</h1>
-                </div>
-                <button class="create-version-btn">➕ Nova Versão</button>
-            </div>
-            
-            <div class="tabs">
-                <div class="tab ${!currentVersion ? 'active' : ''}" id="versions-tab">📄 Versões</div>
-                ${currentVersion ? `<div class="tab active" id="pdf-viewer-tab">📖 Visualizador</div>` : ''}
-            </div>
-            
-            ${!currentVersion ? `
-                <div class="card">
-                    <h3>📄 Versões Disponíveis</h3>
-                    <div id="versions-list">
-                        ${versions.map(v => `
-                            <div class="task-item" data-version-id="${v.id}" style="margin: 10px 0;">
-                                <strong>${v.version_tag}</strong>
-                                <div style="font-size: 12px; color: #666;">
-                                    Criado em: ${new Date(v.created_at).toLocaleDateString()}
-                                    ${v.pdf_url ? '📎 Com PDF' : '📄 Sem PDF'}
-                                </div>
-                            </div>
-                        `).join('')}
-                        ${versions.length === 0 ? '<p>Nenhuma versão criada ainda.</p>' : ''}
-                    </div>
-                </div>
-            ` : `
-                <div class="card">
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <input type="file" accept=".pdf" id="pdfUpload">
-                        <button class="secondary change-version-btn">🔙 Trocar Versão</button>
-                    </div>
-                    <div id="pdf-container"></div>
-                </div>
-            `}
-        `;
-    }
-
-    function renderChecklistView() {
-        if (!currentProject) {
-            return `<div class="card">⚠️ Selecione um projeto primeiro no Dashboard</div>`;
-        }
-        
-        const grouped = {};
-        checklists.forEach(item => {
-            if (!grouped[item.area]) grouped[item.area] = [];
-            grouped[item.area].push(item);
-        });
-        
-        return `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <button class="back-to-dash">← Voltar</button>
-                    <h1 style="display: inline-block; margin-left: 16px;">✅ Checklist</h1>
-                </div>
-                <button class="refresh-checklist-btn">🔄 Atualizar</button>
-            </div>
-            
-            <div id="checklists-container">
-                ${Object.entries(grouped).map(([area, items]) => {
-                    const checked = items.filter(i => i.is_checked).length;
-                    const percent = items.length > 0 ? (checked / items.length * 100).toFixed(0) : 0;
-                    return `
-                        <div class="card">
-                            <h3>🎯 ${area.toUpperCase()}</h3>
-                            <div style="background: #e0e0e0; border-radius: 10px; height: 8px; margin: 12px 0;">
-                                <div style="background: #2B7FDD; width: ${percent}%; height: 8px; border-radius: 10px;"></div>
-                            </div>
-                            <div style="font-size: 12px; margin-bottom: 16px;">${checked}/${items.length} itens concluídos (${percent}%)</div>
-                            ${items.map(item => `
-                                <div class="checklist-item">
-                                    <input type="checkbox" data-checklist-id="${item.id}" data-checked="${item.is_checked}" ${item.is_checked ? 'checked' : ''}>
-                                    <div style="flex: 1;">
-                                        <strong>${item.item}</strong>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        `;
-    }
-
-    function renderDataLakeView() {
-        if (!currentProject) {
-            return `<div class="card">⚠️ Selecione um projeto primeiro no Dashboard</div>`;
-        }
-        
-        return `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <button class="back-to-dash">← Voltar</button>
-                    <h1 style="display: inline-block; margin-left: 16px;">💾 Data Lake</h1>
-                </div>
-                <button class="create-indicator-btn">➕ Novo Indicador</button>
-            </div>
-            
-            <div class="card">
-                <h3>📊 Indicadores Cadastrados</h3>
-                <div id="indicators-list">
-                    ${indicators.map(ind => `
-                        <div class="task-item">
-                            <strong>${ind.indicator_name}</strong>
-                            <div style="font-size: 12px; color: #666;">
-                                Página: ${ind.page || 'N/A'} | Planilha: ${ind.spreadsheet_lake || 'N/A'}
-                            </div>
-                        </div>
-                    `).join('')}
-                    ${indicators.length === 0 ? '<p>Nenhum indicador cadastrado ainda.</p>' : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    function renderTeamView() {
-        const grouped = {};
-        members.forEach(m => {
-            if (!grouped[m.area]) grouped[m.area] = [];
-            grouped[m.area].push(m);
-        });
-        
-        return `
-            <div style="margin-bottom: 20px;">
-                <button class="back-to-dash">← Voltar</button>
-                <h1 style="display: inline-block; margin-left: 16px;">👥 Equipe SEGAPE</h1>
-            </div>
-            
-            ${Object.entries(grouped).map(([area, team]) => `
-                <div class="card">
-                    <h3>🎯 ${area.toUpperCase()}</h3>
-                    <div class="grid-2">
-                        ${team.map(m => `
-                            <div style="background: ${m.bg || '#f8f9fa'}; padding: 12px; border-radius: 8px;">
-                                <strong>${m.name}</strong>
-                                <div style="font-size: 13px; color: #666;">${m.role || 'Membro'}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('')}
-        `;
-    }
-
-    // ============================================
-    // CONTROLE DE VIEWS E EVENTOS
-    // ============================================
-
-    function changeView(view) {
-        currentView = view;
-        
-        // Update nav active state
-        document.querySelectorAll('.nav div').forEach((el, index) => {
-            const views = ['dash', 'projects', 'checklist', 'datalake', 'team'];
-            if (views[index] === view) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
-        });
-        
-        render();
-    }
-
-    function showVersionSelector() {
-        currentVersion = null;
-        render();
-    }
-
-    function showPDFViewer() {
-        if (currentVersion) {
-            const version = versions.find(v => v.id === currentVersion);
-            if (version?.pdf_url) {
-                loadPDF(version.pdf_url);
-            }
-        }
-        render();
-    }
-
-    async function selectProject(id) {
-        currentProject = id;
-        currentVersion = null;
-        await loadVersions(id);
-        await loadChecklists(id);
-        await loadIndicators(id);
-        changeView('projects');
-    }
-
-    async function selectVersion(id) {
-        currentVersion = id;
+    document.querySelectorAll('[data-version-id]').forEach(item => {
+      item.addEventListener('click', async () => {
+        currentVersionId = item.getAttribute('data-version-id');
+        el.currentVersionLabel.textContent = currentVersionId;
+        const v = versions.find(x => x.id === currentVersionId);
+        currentPdfUrl = v?.pdf_url || null;
+        if (currentPdfUrl) await loadPDF(currentPdfUrl);
         await loadTasks();
-        const version = versions.find(v => v.id === id);
-        if (version?.pdf_url) {
-            await loadPDF(version.pdf_url);
-        }
-        render();
-    }
+      });
+    });
+  }
 
-    async function refreshChecklists() {
-        await loadChecklists(currentProject);
-        render();
-    }
+  async function createVersion() {
+    if (!currentProjectId) return alert('Selecione um projeto.');
+    const tag = el.newVersionTag.value.trim();
+    if (!tag) return alert('Informe a tag da versão.');
 
-    async function createIndicator() {
-        const name = prompt('Nome do indicador:');
-        if (!name) return;
-        const page = prompt('Página no PDF:');
-        const spreadsheet = prompt('Planilha do Data Lake:');
-        
-        await supabaseClient.from('project_indicators').insert([{
-            project_id: currentProject,
-            indicator_name: name,
-            page: parseInt(page) || null,
-            spreadsheet_lake: spreadsheet,
-            created_at: new Date()
+    const { data, error } = await sb.from('project_versions').insert([{
+      project_id: currentProjectId,
+      version_tag: tag,
+      created_by: session?.user?.email || 'Usuário',
+      created_at: new Date().toISOString()
+    }]).select();
+
+    if (error) return alert('Erro criar versão: ' + error.message);
+
+    el.newVersionTag.value = '';
+    await loadVersions();
+    if (data?.[0]) {
+      currentVersionId = data[0].id;
+      el.currentVersionLabel.textContent = currentVersionId;
+    }
+  }
+
+  // =========================
+  // PDF + TASKS
+  // =========================
+  async function uploadPDF(file) {
+    if (!currentProjectId || !currentVersionId) return alert('Selecione projeto e versão.');
+    const path = `${currentProjectId}/${currentVersionId}/${file.name}`;
+
+    const up = await sb.storage.from('pdfs').upload(path, file, { upsert: true });
+    if (up.error) return alert('Erro upload PDF: ' + up.error.message);
+
+    const { data } = sb.storage.from('pdfs').getPublicUrl(path);
+    const url = data.publicUrl;
+
+    const { error } = await sb.from('project_versions').update({ pdf_url: url }).eq('id', currentVersionId);
+    if (error) return alert('Erro salvar URL PDF: ' + error.message);
+
+    currentPdfUrl = url;
+    await loadVersions();
+    await loadPDF(url);
+  }
+
+  async function loadPDF(url) {
+    try {
+      const task = pdfjsLib.getDocument(url);
+      pdfDoc = await task.promise;
+      await renderPDF();
+    } catch (e) {
+      alert('Erro carregar PDF: ' + e.message);
+    }
+  }
+
+  async function renderPDF() {
+    const c = el.pdfContainer;
+    c.innerHTML = '';
+    if (!pdfDoc) return;
+
+    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.2 });
+
+      const pageDiv = document.createElement('div');
+      pageDiv.className = 'pdf-page';
+      pageDiv.dataset.page = pageNum;
+      pageDiv.style.width = viewport.width + 'px';
+      pageDiv.style.height = viewport.height + 'px';
+
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({
+        canvasContext: canvas.getContext('2d'),
+        viewport
+      }).promise;
+
+      pageDiv.appendChild(canvas);
+
+      pageDiv.addEventListener('click', async (e) => {
+        if (!currentVersionId || !currentProjectId) return;
+        const text = prompt('Descrição da tarefa:');
+        if (!text) return;
+
+        const rect = pageDiv.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+
+        const { error } = await sb.from('tasks').insert([{
+          project_id: currentProjectId,
+          version_id: currentVersionId,
+          task_text: text,
+          type: 'tarefa',
+          area: 'geral',
+          page: pageNum,
+          x_pos: x,
+          y_pos: y,
+          priority: 'media',
+          is_done: false,
+          created_by: session?.user?.email || 'Usuário',
+          created_at: new Date().toISOString()
         }]);
-        await loadIndicators(currentProject);
-        render();
+
+        if (error) return alert('Erro criar tarefa: ' + error.message);
+        await loadTasks();
+      });
+
+      c.appendChild(pageDiv);
     }
 
-    // ============================================
-    // EVENT LISTENERS
-    // ============================================
+    renderPins();
+  }
 
-    function attachEventListeners() {
-        // Back buttons
-        document.querySelectorAll('.back-to-dash').forEach(btn => {
-            btn.addEventListener('click', () => changeView('dash'));
-        });
-        
-        // Project cards in dashboard
-        document.querySelectorAll('[data-project-id]').forEach(card => {
-            card.addEventListener('click', () => {
-                const projectId = card.getAttribute('data-project-id');
-                selectProject(projectId);
-            });
-        });
-        
-        // Version selection
-        document.querySelectorAll('[data-version-id]').forEach(version => {
-            version.addEventListener('click', () => {
-                const versionId = version.getAttribute('data-version-id');
-                selectVersion(versionId);
-            });
-        });
-        
-        // Create version button
-        const createVersionBtn = document.querySelector('.create-version-btn');
-        if (createVersionBtn) {
-            createVersionBtn
+  async function loadTasks() {
+    if (!currentVersionId) return;
+    const { data, error } = await sb.from('tasks')
+      .select('*')
+      .eq('version_id', currentVersionId)
+      .order('created_at', { ascending: false });
+
+    if (error) return alert('Erro tarefas: ' + error.message);
+    tasks = data || [];
+    renderTasks();
+    renderPins();
+  }
+
+  function renderTasks() {
+    if (tasks.length === 0) {
+      el.tasksList.innerHTML = `<p class="muted">Sem tarefas nesta versão.</p>`;
+      return;
+    }
+
+    el.tasksList.innerHTML = tasks.map(t => `
+      <div class="list-item">
+        <strong>${t.task_text}</strong>
+        <div class="muted">página ${t.page || '-'} | prioridade ${t.priority || '-'} | ${t.is_done ? '✅ concluída' : '⏳ pendente'}</div>
+        <button class="action secondary" data-toggle-task="${t.id}" style="margin-top:8px;">
+          Marcar como ${t.is_done ? 'pendente' : 'concluída'}
+        </button>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('[data-toggle-task]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.getAttribute('data-toggle-task'));
+        const item = tasks.find(x => x.id === id);
+        if (!item) return;
+
+        const { error } = await sb.from('tasks')
+          .update({
+            is_done: !item.is_done,
+            checked_by: session?.user?.email || 'Usuário',
+            checked_at: new Date().toISOString()
+          })
+          .eq('id', id);
+
+        if (error) return alert('Erro atualizar tarefa: ' + error.message);
+        await loadTasks();
+      });
+    });
+  }
+
+  function renderPins() {
+    document.querySelectorAll('.pin').forEach(p => p.remove());
+
+    tasks.forEach(t => {
+      const pageDiv = document.querySelector(`.pdf-page[data-page="${t.page}"]`);
+      if (!pageDiv) return;
+
+      const pin = document.createElement('div');
+      pin.className = `pin ${t.is_done ? 'done' : ''}`;
+      pin.style.left = (t.x_pos * 100) + '%';
+      pin.style.top = (t.y_pos * 100) + '%';
+      pin.title = t.task_text;
+      pageDiv.appendChild(pin);
+    });
+  }
+
+  // =========================
+  // CHECKLIST
+  // =========================
+  async function loadChecklists() {
+    if (!currentProjectId) return;
+    const { data, error } = await sb.from('checklists')
+      .select('*')
+      .eq('project_id', currentProjectId)
+      .order('area', { ascending: true });
+
+    if (error) return alert('Erro checklist: ' + error.message);
+    checklists = data || [];
+    renderChecklists();
+  }
+
+  function renderChecklists() {
+    if (!currentProjectId) {
+      el.checklistList.innerHTML = '<p class="muted">Selecione um projeto.</p>';
+      return;
+    }
+    if (checklists.length === 0) {
+      el.checklistList.innerHTML = '<p class="muted">Nenhum item de checklist.</p>';
+      return;
+    }
+
+    el.checklistList.innerHTML = checklists.map(c => `
+      <div class="list-item">
+        <label class="row">
+          <input type="checkbox" data-check-id="${c.id}" ${c.is_checked ? 'checked' : ''} />
+          <strong>${c.item}</strong>
+          <span class="muted">(${c.area || 'geral'})</span>
+        </label>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('[data-check-id]').forEach(chk => {
+      chk.addEventListener('change', async () => {
+        const id = chk.getAttribute('data-check-id');
+        const current = checklists.find(x => x.id === id);
+        if (!current) return;
+
+        const { error } = await sb.from('checklists').update({
+          is_checked: !current.is_checked,
+          checked_by: session?.user?.email || 'Usuário',
+          checked_at: new Date().toISOString()
+        }).eq('id', id);
+
+        if (error) return alert('Erro atualizar checklist: ' + error.message);
+        await loadChecklists();
+      });
+    });
+  }
+
+  // =========================
+  // INDICATORS
+  // =========================
+  async function loadIndicators() {
+    if (!currentProjectId) return;
+    const { data, error } = await sb.from('project_indicators')
+      .select('*')
+      .eq('project_id', currentProjectId)
+      .order('created_at', { ascending: false });
+
+    if (error) return alert('Erro indicadores: ' + error.message);
+    indicators = data || [];
+    renderIndicators();
+  }
+
+  async function addIndicator() {
+    if (!currentProjectId) return alert('Selecione um projeto.');
+    const name = el.indicatorName.value.trim();
+    const page = parseInt(el.indicatorPage.value.trim(), 10);
+    const sheet = el.indicatorSheet.value.trim();
+
+    if (!name) return alert('Informe o nome do indicador.');
+
+    const { error } = await sb.from('project_indicators').insert([{
+      project_id: currentProjectId,
+      indicator_name: name,
+      page: Number.isNaN(page) ? null : page,
+      spreadsheet_lake: sheet || null,
+      created_at: new Date().toISOString()
+    }]);
+
+    if (error) return alert('Erro adicionar indicador: ' + error.message);
+
+    el.indicatorName.value = '';
+    el.indicatorPage.value = '';
+    el.indicatorSheet.value = '';
+    await loadIndicators();
+  }
+
+  function renderIndicators() {
+    if (!currentProjectId) {
+      el.indicatorsList.innerHTML = '<p class="muted">Selecione um projeto.</p>';
+      return;
+    }
+    if (indicators.length === 0) {
+      el.indicatorsList.innerHTML = '<p class="muted">Sem indicadores.</p>';
+      return;
+    }
+
+    el.indicatorsList.innerHTML = indicators.map(i => `
+      <div class="list-item">
+        <strong>${i.indicator_name}</strong>
+        <div class="muted">Página: ${i.page ?? '-'} | Planilha: ${i.spreadsheet_lake ?? '-'}</div>
+      </div>
+    `).join('');
+  }
+
+  // =========================
+  // NAV
+  // =========================
+  el.navAuth.addEventListener('click', () => { setActiveNav(el.navAuth); showView('auth'); });
+  el.navDash.addEventListener('click', async () => {
+    if (!requireLogin()) return;
+    await loadProjects();
+    setActiveNav(el.navDash);
+    showView('dash');
+  });
+  el.navProject.addEventListener('click', () => {
+    if (!requireLogin()) return;
+    setActiveNav(el.navProject);
+    showView('project');
+  });
+  el.navChecklist.addEventListener('click', async () => {
+    if (!requireLogin()) return;
+    await loadChecklists();
+    setActiveNav(el.navChecklist);
+    showView('checklist');
+  });
+  el.navIndicators.addEventListener('click', async () => {
+    if (!requireLogin()) return;
+    await loadIndicators();
+    setActiveNav(el.navIndicators);
+    showView('indicators');
+  });
+
+  // =========================
+  // EVENTS
+  // =========================
+  el.btnSignup.addEventListener('click', doSignUp);
+  el.btnLogin.addEventListener('click', doLogin);
+  el.btnLogout.addEventListener('click', doLogout);
+
+  el.btnCreateProject.addEventListener('click', createProject);
+  el.btnCreateVersion.addEventListener('click', createVersion);
+
+  el.pdfUpload.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (file) await uploadPDF(file);
+  });
+
+  el.btnReloadPdf.addEventListener('click', async () => {
+    if (currentPdfUrl) await loadPDF(currentPdfUrl);
+  });
+
+  el.btnAddIndicator.addEventListener('click', addIndicator);
+
+  // =========================
+  // INIT
+  // =========================
+  async function init() {
+    await refreshSession();
+    if (session) {
+      await loadProjects();
+      setActiveNav(el.navDash);
+      showView('dash');
+      setAuthMsg('Sessão ativa.');
+    } else {
+      setActiveNav(el.navAuth);
+      showView('auth');
+      setAuthMsg('Faça login para continuar.');
+    }
+
+    sb.auth.onAuthStateChange(async () => {
+      await refreshSession();
+      if (session) {
+        await loadProjects();
+        setActiveNav(el.navDash);
+        showView('dash');
+      } else {
+        setActiveNav(el.navAuth);
+        showView('auth');
+      }
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
