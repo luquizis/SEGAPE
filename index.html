@@ -589,11 +589,19 @@ const SWATCHES=['#1D9E75','#1351B4','#E52207','#C07A10','#8A2252','#7A4500','#0D
 
 const SK='segape-v10-s';
 function lS(){try{return JSON.parse(localStorage.getItem(SK))||{};}catch(e){return{};}}
-function sS(){localStorage.setItem(SK,JSON.stringify({proj:G.proj,tab:G.tab,filt:G.filt,scale:G.scale,ver:G.ver}));}
+function sS(){
+  const s=lS();
+  /* salva G.ver POR PROJETO para não vazar entre projetos */
+  if(G.proj&&G.ver) s['ver_'+G.proj]=G.ver;
+  localStorage.setItem(SK,JSON.stringify({...s,proj:G.proj,tab:G.tab,filt:G.filt,scale:G.scale}));
+}
+function getVerForProj(projId){
+  const s=lS();return s['ver_'+projId]||null;
+}
 const _s=lS();
 const G={
   user:null,proj:_s.proj||null,tab:_s.tab||'dash',
-  filt:_s.filt||'all',scale:_s.scale||1.35,ver:_s.ver||null,
+  filt:_s.filt||'all',scale:_s.scale||1.35,ver:null,
   projects:[],members:[],tasks:[],versions:[],checklists:[],indicators:[],pendencies:[],
 };
 let PDF={doc:null,pages:0,curr:1,proj:null,ver:null};
@@ -746,8 +754,11 @@ async function bootApp(){
         dbQ('tasks',{project_id:G.proj}),
         dbQ('project_versions',{project_id:G.proj}),
       ]);
-      if(G.versions.length&&(!G.ver||!G.versions.find(v=>v.id===G.ver)))
-        G.ver=G.versions[0].id;
+      if(G.versions.length&&(!G.ver||!G.versions.find(v=>v.id===G.ver))){
+        /* restaura versão salva para este projeto específico */
+        const savedVer=getVerForProj(G.proj);
+        G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
+      }
     }
   }catch(e){
     console.error('Boot error:',e);
@@ -856,7 +867,11 @@ async function selectProj(id){
     dbQ('tasks',{project_id:id}),
     dbQ('project_versions',{project_id:id}),
   ]);
-  if(G.versions.length)G.ver=G.versions[0].id;
+  if(G.versions.length){
+    /* restaura última versão usada neste projeto, ou usa a mais recente */
+    const savedVer=getVerForProj(id);
+    G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
+  }
 
   /* ── CORREÇÃO: carrega PDF da versão ativa ANTES de switchTab ──
      switchTab('rev') verifica PDF.doc para decidir viewer vs dropzone.
@@ -878,7 +893,10 @@ async function refreshAll(){
   if(G.proj){
     G.tasks=await dbQ('tasks',{project_id:G.proj});
     G.versions=await dbQ('project_versions',{project_id:G.proj});
-    if(G.versions.length&&!G.ver)G.ver=G.versions[0].id;
+    if(G.versions.length&&!G.ver){
+      const savedVer=getVerForProj(G.proj);
+      G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
+    }
   }
   renderSB();renderTaskList();
 }
