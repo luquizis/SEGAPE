@@ -501,6 +501,57 @@ tr:hover td{background:var(--surf2)}
   .login-card{padding:28px 22px;}.login-names h1{font-size:17px;}
   .tb-ver{display:none;}.bn-item{font-size:8px;}
 }
+
+/* ═══════════════════════════════════════════════
+   NOTIFICATIONS — sino + painel
+═══════════════════════════════════════════════ */
+#notif-btn{position:relative;background:none;border:none;cursor:pointer;
+  padding:5px 7px;border-radius:var(--r8);color:var(--ink3);font-size:18px;
+  line-height:1;transition:background .1s;flex-shrink:0}
+#notif-btn:hover{background:var(--bg);color:var(--ink)}
+#notif-badge{position:absolute;top:1px;right:1px;min-width:16px;height:16px;
+  background:var(--r);color:#fff;border-radius:8px;font-size:9px;font-weight:700;
+  font-family:var(--fm);display:none;align-items:center;justify-content:center;
+  padding:0 4px;border:2px solid var(--surf);line-height:1}
+#notif-badge.show{display:flex}
+
+#notif-panel{
+  position:fixed;top:var(--tbh);right:12px;width:360px;max-width:calc(100vw - 24px);
+  background:var(--surf);border:1px solid var(--brd2);border-radius:var(--r12);
+  box-shadow:var(--shl);z-index:300;display:none;
+  flex-direction:column;max-height:480px;overflow:hidden;
+  animation:fadeUp .14s ease
+}
+#notif-panel.open{display:flex}
+.notif-hd{padding:12px 15px;border-bottom:1px solid var(--brd);
+  display:flex;align-items:center;gap:8px;flex-shrink:0}
+.notif-hd h3{font-family:var(--fh);font-size:13px;font-weight:700;flex:1}
+.notif-mark-all{font-size:10px;color:var(--g);background:none;border:none;
+  cursor:pointer;font-family:var(--fb);padding:2px 6px;border-radius:3px}
+.notif-mark-all:hover{background:var(--bgf)}
+.notif-list{overflow-y:auto;flex:1}
+.notif-list::-webkit-scrollbar{width:3px}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;
+  border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s;
+  position:relative}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--surf2)}
+.notif-item.unread{background:#F5F8FF}
+.notif-item.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--b);border-radius:0 2px 2px 0}
+.notif-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;font-family:var(--fh);flex-shrink:0}
+.notif-body{flex:1;min-width:0}
+.notif-text{font-size:12px;line-height:1.45;color:var(--ink)}
+.notif-text strong{font-weight:700;color:var(--b)}
+.notif-preview{font-size:11px;color:var(--ink3);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
+.notif-time{font-size:9px;color:var(--ink3);font-family:var(--fm);
+  white-space:nowrap;margin-top:2px}
+.notif-empty{padding:28px 16px;text-align:center;color:var(--ink3);font-size:12px}
+@media(max-width:768px){
+  #notif-panel{top:auto;bottom:68px;right:8px;left:8px;width:auto;max-height:70vh}
+}
 </style>
 </head>
 <body>
@@ -578,6 +629,7 @@ tr:hover td{background:var(--surf2)}
     <div class="tb-ti"><span id="tb-title">Dashboard</span><small id="tb-sub"></small></div>
     <div class="tb-ver" id="tb-ver" onclick="toggleVerMenu()" style="display:none">— · versão</div>
     <div class="tb-tabs" id="tb-tabs"></div>
+    <button id="notif-btn" onclick="toggleNotifPanel()" title="Notificações">🔔<div id="notif-badge"></div></button>
     <button id="save-badge" onclick="doSaveAll()" title="Salvar alterações pendentes"></button>
     <button class="btn sm" id="btn-upload" style="display:none" onclick="triggerUpload()">⬆ PDF</button>
     <input type="file" id="fi" accept="application/pdf" style="display:none">
@@ -644,6 +696,18 @@ tr:hover td{background:var(--surf2)}
     <button class="bn-item" data-bn="ver" onclick="botNav('ver')"><span class="bn-icon">🕐</span>Versões</button>
   </div>
 </nav>
+</div>
+
+<!-- PAINEL DE NOTIFICAÇÕES -->
+<div id="notif-panel">
+  <div class="notif-hd">
+    <h3>🔔 Notificações</h3>
+    <button class="notif-mark-all" onclick="markAllRead()">Marcar todas como lidas</button>
+    <button class="btn gh sm" onclick="closeNotifPanel()">✕</button>
+  </div>
+  <div class="notif-list" id="notif-list">
+    <div class="notif-empty">Carregando…</div>
+  </div>
 </div>
 
 <!-- OVERLAY DE COMENTÁRIOS -->
@@ -875,6 +939,8 @@ async function bootApp(){
   }
   hideLd();renderSB();switchTab(G.proj?G.tab:'dash');
   if(G.proj&&!PDF.doc)showDZ();
+  // carrega notificações
+  loadNotifications();
 }
 
 (async()=>{
@@ -1590,6 +1656,8 @@ async function submitComment(){
     CMT.comments.push(data);
     renderComments();
     updateCmtCount(CMT.taskId,CMT.comments.length);
+    await createMentionNotifications(data.id,CMT.taskId,author,body,mentions);
+    loadNotifications();
   }catch(e){
     CMT.comments=CMT.comments.filter(c=>c.id!==tmpId);
     renderComments();alert('Erro ao salvar: '+e.message);
@@ -2142,6 +2210,151 @@ switchTab=function(tab){
 function setVH(){document.documentElement.style.setProperty('--real-vh',window.innerHeight*0.01+'px');}
 setVH();window.addEventListener('resize',setVH,{passive:true});
 updateBotNav();
+
+/* ═══════════════════════════════════════════════
+   NOTIFICATIONS MODULE — @menção com painel
+═══════════════════════════════════════════════ */
+let _notifOpen = false;
+
+async function loadNotifications() {
+  const me = resolveMyName();
+  if (!me) return;
+  try {
+    const { data } = await SB
+      .from('notifications')
+      .select('*')
+      .eq('recipient', me)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    renderNotifBadge(data || []);
+    if (_notifOpen) renderNotifList(data || []);
+  } catch(e) { console.warn('[notif]', e.message); }
+}
+
+function resolveMyName() {
+  const email = G.user?.email || '';
+  const part  = email.split('@')[0];
+  const match = G.members.find(m => String(m.name) === part || String(m.name) === email);
+  return match?.name || part || null;
+}
+
+function renderNotifBadge(notifs) {
+  const unread = notifs.filter(n => !n.is_read).length;
+  const badge  = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (unread > 0) {
+    badge.textContent = unread > 99 ? '99+' : unread;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+function renderNotifList(notifs) {
+  const el = document.getElementById('notif-list');
+  if (!el) return;
+  if (!notifs.length) {
+    el.innerHTML = '<div class="notif-empty">Nenhuma notificação ainda.<br>Você será avisado quando alguém te mencionar com @.</div>';
+    return;
+  }
+  el.innerHTML = notifs.map(n => {
+    const m   = G.members.find(x => String(x.name) === String(n.author));
+    const avS = m ? `background:${m.bg||'#eee'};color:${m.color||'#444'}` : 'background:#EFEDE8;color:#444240';
+    const ini = String(n.author||'?').slice(0,2).toUpperCase();
+    const t   = G.tasks.find(x => String(x.id) === String(n.task_id));
+    const proj= t ? (G.projects.find(p => p.id === t.project_id)?.name || '') : '';
+    const preview = (n.body_preview || '').slice(0, 80);
+    return `<div class="notif-item${n.is_read ? '' : ' unread'}" data-nid="${n.id}" data-tid="${n.task_id}" data-cid="${n.comment_id}" onclick="openNotif(this)">
+      <div class="notif-av" style="${avS}">${ini}</div>
+      <div class="notif-body">
+        <div class="notif-text"><strong>${esc(n.author)}</strong> mencionou você em uma tarefa${proj ? ' · '+esc(proj) : ''}</div>
+        ${preview ? `<div class="notif-preview">"${esc(preview)}"</div>` : ''}
+        <div class="notif-time">${fmtCmtTime(n.created_at)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openNotif(el) {
+  const nid = el.dataset.nid;
+  const tid = el.dataset.tid;
+  const cid = el.dataset.cid;
+  // marca como lida
+  if (el.classList.contains('unread')) {
+    el.classList.remove('unread');
+    try { await SB.from('notifications').update({ is_read: true }).eq('id', nid); } catch(e) {}
+    // atualiza badge
+    const unreadNow = document.querySelectorAll('.notif-item.unread').length;
+    const badge = document.getElementById('notif-badge');
+    if (unreadNow === 0) badge.classList.remove('show');
+    else badge.textContent = unreadNow;
+  }
+  closeNotifPanel();
+  // garante que estamos na aba rev do projeto certo
+  const t = G.tasks.find(x => String(x.id) === String(tid));
+  if (t && t.project_id !== G.proj) {
+    await selectProj(t.project_id);
+  } else if (G.tab !== 'rev') {
+    switchTab('rev');
+  }
+  // abre painel de comentários e rola até o comentário
+  await openCmtPanel(tid);
+  setTimeout(() => scrollToCmt(cid), 350);
+}
+
+function scrollToCmt(cid) {
+  const el = document.getElementById('ci-' + cid);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.style.outline = '2px solid var(--b)';
+  el.style.outlineOffset = '2px';
+  setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 1500);
+}
+
+async function markAllRead() {
+  const me = resolveMyName();
+  if (!me) return;
+  try {
+    await SB.from('notifications').update({ is_read: true }).eq('recipient', me).eq('is_read', false);
+  } catch(e) {}
+  document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+  document.getElementById('notif-badge')?.classList.remove('show');
+}
+
+function toggleNotifPanel() {
+  _notifOpen = !_notifOpen;
+  const panel = document.getElementById('notif-panel');
+  if (_notifOpen) {
+    panel.classList.add('open');
+    loadNotifications();
+    setTimeout(() => document.addEventListener('click', notifOutside, { capture: true, once: true }), 80);
+  } else {
+    panel.classList.remove('open');
+  }
+}
+function closeNotifPanel() {
+  _notifOpen = false;
+  document.getElementById('notif-panel')?.classList.remove('open');
+}
+function notifOutside(e) {
+  const panel = document.getElementById('notif-panel');
+  const btn   = document.getElementById('notif-btn');
+  if (panel && !panel.contains(e.target) && !btn.contains(e.target)) {
+    closeNotifPanel();
+  }
+}
+
+/* Cria notificação para cada membro mencionado ao salvar comentário */
+async function createMentionNotifications(commentId, taskId, author, body, mentions) {
+  if (!Array.isArray(mentions) || !mentions.length) return;
+  const preview = body.slice(0, 80);
+  const rows = mentions
+    .filter(name => name !== author) // não notifica a si mesmo
+    .map(name => ({ recipient: name, comment_id: commentId, task_id: taskId, author, body_preview: preview }));
+  if (!rows.length) return;
+  try { await SB.from('notifications').insert(rows); } catch(e) { console.warn('[notif insert]', e.message); }
+}
+
 </script>
 </body>
 </html>
