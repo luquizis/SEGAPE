@@ -1325,7 +1325,8 @@ async function doSaveTask(wrap){
 function renderPins(){
   document.querySelectorAll('.pin').forEach(p=>p.remove());
   if(PDF.proj!==G.proj)return;
-  const tasks=G.tasks.filter(t=>t.project_id===G.proj);
+  // somente tarefas da versão ativa (abertas herdadas já tiveram version_id atualizado)
+  const tasks=G.tasks.filter(t=>t.project_id===G.proj&&(t.version_id===G.ver||(G.ver&&!t.version_id&&!t.is_done)));
   tasks.forEach((t,i)=>{
     const wrap=document.querySelector(`[data-page="${t.page}"]`);if(!wrap)return;
     const pin=document.createElement('div');
@@ -1348,7 +1349,8 @@ function hlTask(id){
 
 /* TASK LIST */
 function renderTaskList(){
-  const all=G.tasks.filter(t=>t.project_id===G.proj);
+  // somente tarefas da versão ativa (abertas herdadas já tiveram version_id atualizado)
+  const all=G.tasks.filter(t=>t.project_id===G.proj&&(t.version_id===G.ver||(G.ver&&!t.version_id&&!t.is_done)));
   const f=G.filt;let list;
   if(f==='all')list=all;
   else if(f==='tarefa'||f==='observacao')list=all.filter(t=>t.type===f);
