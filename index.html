@@ -257,9 +257,7 @@ textarea.fc{resize:vertical;min-height:62px;line-height:1.5}
 .note-form textarea:focus{border-color:var(--b)}
 .nfbtns{display:flex;flex-direction:column;gap:3px}
 
-/* ═══════════════════════════════════════════════
-   COMMENTS PANEL — thread de comentários/respostas
-═══════════════════════════════════════════════ */
+/* COMMENTS PANEL */
 .tc-cmt-btn{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;
   border:1px solid var(--brd);background:var(--surf);color:var(--ink2);
   font-family:var(--fb);transition:all .1s;display:inline-flex;align-items:center;gap:4px}
@@ -524,9 +522,7 @@ tr:hover td{background:var(--surf2)}
   .tb-ver{display:none;}.bn-item{font-size:8px;}
 }
 
-/* ═══════════════════════════════════════════════
-   NOTIFICATIONS — sino + painel
-═══════════════════════════════════════════════ */
+/* NOTIFICATIONS */
 #notif-btn{position:relative;background:none;border:none;cursor:pointer;
   padding:5px 7px;border-radius:var(--r8);color:var(--ink3);font-size:18px;
   line-height:1;transition:background .1s;flex-shrink:0}
@@ -812,6 +808,18 @@ async function dbQ(table,filters={}){
   if(error)console.error(table,error.message);
   return data||[];
 }
+
+/* ── CORREÇÃO: versões sempre ordenadas da mais recente para a mais antiga ── */
+async function dbQVersions(projectId){
+  const{data,error}=await SB
+    .from('project_versions')
+    .select('*')
+    .eq('project_id',projectId)
+    .order('created_at',{ascending:false});
+  if(error)console.error('project_versions',error.message);
+  return data||[];
+}
+
 async function dbIns(table,row){
   const{data,error}=await SB.from(table).insert([row]).select().single();
   if(error)throw new Error(error.message);
@@ -939,9 +947,10 @@ async function bootApp(){
     if(!G.proj&&G.projects.length)G.proj=G.projects[0].id;
     if(G.proj){
       showLd('Carregando projeto…');
+      /* ── usa dbQVersions para garantir ordem decrescente ── */
       [G.tasks,G.versions]=await Promise.all([
         dbQ('tasks',{project_id:G.proj}),
-        dbQ('project_versions',{project_id:G.proj}),
+        dbQVersions(G.proj),
       ]);
       if(G.versions.length&&(!G.ver||!G.versions.find(v=>v.id===G.ver))){
         const savedVer=getVerForProj(G.proj);
@@ -961,7 +970,6 @@ async function bootApp(){
   }
   hideLd();renderSB();switchTab(G.proj?G.tab:'dash');
   if(G.proj&&!PDF.doc)showDZ();
-  // carrega notificações
   loadNotifications();
 }
 
@@ -1043,9 +1051,10 @@ async function selectProj(id){
   G.proj=id;G.ver=null;G.filt='all';
   PDF.doc=null;PDF.proj=null;PDF.pages=0;PDF.curr=1;
   showLd('Carregando projeto…');
+  /* ── usa dbQVersions para garantir ordem decrescente ── */
   [G.tasks,G.versions]=await Promise.all([
     dbQ('tasks',{project_id:id}),
-    dbQ('project_versions',{project_id:id}),
+    dbQVersions(id),
   ]);
   if(G.versions.length){
     const savedVer=getVerForProj(id);
@@ -1062,7 +1071,8 @@ async function refreshAll(){
   try{const{data:pd}=await SB.from('global_pendencies').select('*');G.pendencies=pd||[];}catch(e){G.pendencies=[];}
   if(G.proj){
     G.tasks=await dbQ('tasks',{project_id:G.proj});
-    G.versions=await dbQ('project_versions',{project_id:G.proj});
+    /* ── usa dbQVersions para garantir ordem decrescente ── */
+    G.versions=await dbQVersions(G.proj);
     if(G.versions.length&&!G.ver){
       const savedVer=getVerForProj(G.proj);
       G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
@@ -1347,7 +1357,6 @@ async function doSaveTask(wrap){
 function renderPins(){
   document.querySelectorAll('.pin').forEach(p=>p.remove());
   if(PDF.proj!==G.proj)return;
-  // somente tarefas da versão ativa (abertas herdadas já tiveram version_id atualizado)
   const tasks=G.tasks.filter(t=>t.project_id===G.proj&&(t.version_id===G.ver||(G.ver&&!t.version_id&&!t.is_done)));
   tasks.forEach((t,i)=>{
     const wrap=document.querySelector(`[data-page="${t.page}"]`);if(!wrap)return;
@@ -1371,7 +1380,6 @@ function hlTask(id){
 
 /* TASK LIST */
 function renderTaskList(){
-  // somente tarefas da versão ativa (abertas herdadas já tiveram version_id atualizado)
   const all=G.tasks.filter(t=>t.project_id===G.proj&&(t.version_id===G.ver||(G.ver&&!t.version_id&&!t.is_done)));
   const f=G.filt;let list;
   if(f==='all')list=all;
@@ -1449,7 +1457,6 @@ function renderTaskList(){
     if(t?.page)scrollToPDFPage(t.page);
     gotoPin(e.dataset.tid);
   }));
-  // carrega contagens de comentários (não bloqueante)
   loadCmtCounts(sorted.map(t=>t.id));
 }
 
@@ -1512,13 +1519,11 @@ document.getElementById('tpf').addEventListener('click',e=>{
   renderTaskList();
 });
 
-/* ═══════════════════════════════════════════════
-   COMMENTS MODULE — thread com replies e @mention
-═══════════════════════════════════════════════ */
+/* COMMENTS MODULE */
 const CMT={
   taskId:null,task:null,
   comments:[],
-  replyTo:null,       // {id, author}
+  replyTo:null,
   mentionStart:-1,
   mentionSel:0,
   mentionMatches:[],
@@ -1668,7 +1673,6 @@ async function submitComment(){
   const author=meMatch?.name||meName||'sistema';
   const mentions=[...body.matchAll(/@(\S+)/g)].map(m=>m[1]);
   const row={task_id:CMT.taskId,author,body,parent_id:CMT.replyTo?.id||null,mentions};
-  // otimista
   const tmpId='tmp_'+Date.now();
   CMT.comments.push({...row,id:tmpId,created_at:new Date().toISOString()});
   renderComments();ta.value='';
@@ -1706,7 +1710,6 @@ function updateCmtCount(taskId,count){
   }else{if(badge)badge.remove();}
 }
 
-/* TECLADO NO TEXTAREA */
 document.getElementById('cmt-textarea').addEventListener('keydown',e=>{
   const drop=document.getElementById('mention-drop');
   if(drop.style.display==='block'){
@@ -1727,7 +1730,6 @@ document.getElementById('cmt-textarea').addEventListener('keyup',e=>{
   if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key))checkMention(e.target);
 });
 
-/* @MENTION AUTOCOMPLETE */
 function checkMention(ta){
   const pos=ta.selectionStart;
   const text=ta.value.slice(0,pos);
@@ -1962,26 +1964,19 @@ async function renderIndView(){
     </div>`;
 }
 
-/* ═══════════════════════════════════════════════
-   LAKE CHECKER — cruza entregas do Teams com indicadores
-═══════════════════════════════════════════════ */
+/* LAKE CHECKER */
 async function checkLakeDelivery(){
   const msg=document.getElementById('lake-msg')?.value||'';
   if(!msg.trim()){return;}
-
-  // extrai caminhos entre backticks e tokens com formato lake
   const tables=[];
   const btMatches=msg.match(/`([^`]+)`/g)||[];
   btMatches.forEach(function(m){var t=m.replace(/`/g,'').trim();if(t&&!tables.includes(t))tables.push(t);});
   msg.split(/ +/).forEach(function(token){var t=token.replace(/[^a-zA-Z0-9._-]/g,'');if(t.split('.').length>=3&&!tables.includes(t))tables.push(t);});
-
   if(!tables.length){
     document.getElementById('lake-results').innerHTML=
       '<div class="lake-summary">Nenhum caminho de tabela encontrado na mensagem. Verifique o formato.</div>';
     return;
   }
-
-  // busca indicadores em TODOS os projetos
   showLd('Cruzando com indicadores…');
   let allIndicators=[];
   try{
@@ -1989,28 +1984,22 @@ async function checkLakeDelivery(){
     allIndicators=data||[];
   }catch(e){console.error(e);}
   hideLd();
-
-  // para cada tabela encontrada, verifica matches
   const resultsEl=document.getElementById('lake-results');
   let html='';
   let totalMatches=0;
-  const matched=[]; // ids de indicadores que precisam revisar
-
+  const matched=[];
   tables.forEach(table=>{
     const tableNorm=table.toLowerCase();
-    const tableName=tableNorm.split('.').pop(); // só o nome final
-
+    const tableName=tableNorm.split('.').pop();
     const hits=allIndicators.filter(ind=>{
       const lake=(ind.spreadsheet_lake||'').toLowerCase();
       const query=(ind.query_sql||'').toLowerCase();
       return lake.includes(tableNorm)||lake.includes(tableName)||
              query.includes(tableNorm)||query.includes(tableName);
     });
-
     if(hits.length){
       totalMatches+=hits.length;
       hits.forEach(ind=>{ if(!matched.includes(ind.id))matched.push(ind.id); });
-      const proj=G.projects.find(p=>p.id===hits[0]?.project_id);
       html+=`<div class="lake-hit match">
         <div class="lake-hit-hd">
           <span style="font-size:12px">✅</span>
@@ -2039,15 +2028,12 @@ async function checkLakeDelivery(){
       </div>`;
     }
   });
-
-  // resumo + botão para marcar todos como "Revisar"
   const summary=totalMatches>0
     ?`<div class="lake-summary" style="display:flex;align-items:center;gap:10px">
         <span style="flex:1">🔔 <strong>${totalMatches} indicador${totalMatches!==1?'es':''}</strong> precisam ser atualizados nesta entrega.</span>
         <button class="btn b sm" onclick="markLakeAsReview(${JSON.stringify(matched)})">Marcar todos como "Revisar"</button>
       </div>`
     :`<div class="lake-summary">Nenhum indicador cadastrado corresponde às tabelas desta entrega.</div>`;
-
   resultsEl.innerHTML=summary+html;
 }
 
@@ -2056,18 +2042,15 @@ async function markLakeAsReview(ids){
   showLd('Atualizando indicadores…');
   try{
     await SB.from('project_indicators').update({is_updated:false}).in('id',ids);
-    // atualiza em memória
     if(Array.isArray(G.indicators)){
       G.indicators.forEach(ind=>{if(ids.includes(ind.id))ind.is_updated=false;});
     }
   }catch(e){alert('Erro: '+e.message);}
   hideLd();
-  // re-render a tabela de indicadores sem perder os resultados
   const indWrap=document.querySelector('#v-ind .ind-wrap');
   if(indWrap){
     const fresh=await dbQ('project_indicators',{project_id:G.proj});
     G.indicators=fresh;
-    // rebuild só a tabela
     const tbody=indWrap.querySelector('tbody');
     if(tbody){
       tbody.innerHTML=G.indicators.map(i=>`<tr>
@@ -2083,11 +2066,8 @@ async function markLakeAsReview(ids){
       </tr>`).join('');
     }
   }
-  // re-check para atualizar badges nos resultados
   const btns=document.querySelectorAll('#lake-results .ist');
-  btns.forEach(b=>{
-    b.className='ist rev';b.textContent='Revisar';
-  });
+  btns.forEach(b=>{b.className='ist rev';b.textContent='Revisar';});
   const btn=document.querySelector('#lake-results button[onclick^="markLake"]');
   if(btn)btn.textContent='✓ Marcados como "Revisar"';
 }
@@ -2296,18 +2276,16 @@ async function doCreateVer(){
   let newVer;
   try{
     newVer=await dbIns('project_versions',{project_id:G.proj,version_tag:ver,changelog:log||'—',created_by:auth});
-    G.versions.unshift(newVer);G.ver=newVer.id;
+    G.versions.unshift(newVer); /* insere no início — mantém ordem decrescente */
+    G.ver=newVer.id;
   }catch(e){alert('Erro: '+e.message);hideLd();return;}
 
-  // ── Herda tarefas ABERTAS na nova versão; mantém concluídas na versão anterior ──
   const abertas=G.tasks.filter(t=>t.project_id===G.proj&&!t.is_done);
   if(abertas.length){
     showLd(`Herdando ${abertas.length} tarefa${abertas.length!==1?'s':''} abertas…`);
     try{
-      // atualiza version_id das tarefas abertas para a nova versão
       const ids=abertas.map(t=>t.id);
       await SB.from('tasks').update({version_id:newVer.id}).in('id',ids);
-      // atualiza G.tasks em memória
       abertas.forEach(t=>{t.version_id=newVer.id;});
     }catch(e){console.error('[herdar tarefas]',e.message);}
   }
@@ -2396,150 +2374,130 @@ function setVH(){document.documentElement.style.setProperty('--real-vh',window.i
 setVH();window.addEventListener('resize',setVH,{passive:true});
 updateBotNav();
 
-/* ═══════════════════════════════════════════════
-   NOTIFICATIONS MODULE — @menção com painel
-═══════════════════════════════════════════════ */
-let _notifOpen = false;
+/* NOTIFICATIONS MODULE */
+let _notifOpen=false;
 
-async function loadNotifications() {
-  const me = resolveMyName();
-  if (!me) return;
-  try {
-    const { data } = await SB
+async function loadNotifications(){
+  const me=resolveMyName();
+  if(!me)return;
+  try{
+    const{data}=await SB
       .from('notifications')
       .select('*')
-      .eq('recipient', me)
-      .order('created_at', { ascending: false })
+      .eq('recipient',me)
+      .order('created_at',{ascending:false})
       .limit(50);
-    renderNotifBadge(data || []);
-    if (_notifOpen) renderNotifList(data || []);
-  } catch(e) { console.warn('[notif]', e.message); }
+    renderNotifBadge(data||[]);
+    if(_notifOpen)renderNotifList(data||[]);
+  }catch(e){console.warn('[notif]',e.message);}
 }
 
-function resolveMyName() {
-  const email = G.user?.email || '';
-  const part  = email.split('@')[0];
-  const match = G.members.find(m => String(m.name) === part || String(m.name) === email);
-  return match?.name || part || null;
+function resolveMyName(){
+  const email=G.user?.email||'';
+  const part=email.split('@')[0];
+  const match=G.members.find(m=>String(m.name)===part||String(m.name)===email);
+  return match?.name||part||null;
 }
 
-function renderNotifBadge(notifs) {
-  const unread = notifs.filter(n => !n.is_read).length;
-  const badge  = document.getElementById('notif-badge');
-  if (!badge) return;
-  if (unread > 0) {
-    badge.textContent = unread > 99 ? '99+' : unread;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
-  }
+function renderNotifBadge(notifs){
+  const unread=notifs.filter(n=>!n.is_read).length;
+  const badge=document.getElementById('notif-badge');
+  if(!badge)return;
+  if(unread>0){badge.textContent=unread>99?'99+':unread;badge.classList.add('show');}
+  else{badge.classList.remove('show');}
 }
 
-function renderNotifList(notifs) {
-  const el = document.getElementById('notif-list');
-  if (!el) return;
-  if (!notifs.length) {
-    el.innerHTML = '<div class="notif-empty">Nenhuma notificação ainda.<br>Você será avisado quando alguém te mencionar com @.</div>';
+function renderNotifList(notifs){
+  const el=document.getElementById('notif-list');
+  if(!el)return;
+  if(!notifs.length){
+    el.innerHTML='<div class="notif-empty">Nenhuma notificação ainda.<br>Você será avisado quando alguém te mencionar com @.</div>';
     return;
   }
-  el.innerHTML = notifs.map(n => {
-    const m   = G.members.find(x => String(x.name) === String(n.author));
-    const avS = m ? `background:${m.bg||'#eee'};color:${m.color||'#444'}` : 'background:#EFEDE8;color:#444240';
-    const ini = String(n.author||'?').slice(0,2).toUpperCase();
-    const t   = G.tasks.find(x => String(x.id) === String(n.task_id));
-    const proj= t ? (G.projects.find(p => p.id === t.project_id)?.name || '') : '';
-    const preview = (n.body_preview || '').slice(0, 80);
-    return `<div class="notif-item${n.is_read ? '' : ' unread'}" data-nid="${n.id}" data-tid="${n.task_id}" data-cid="${n.comment_id}" onclick="openNotif(this)">
+  el.innerHTML=notifs.map(n=>{
+    const m=G.members.find(x=>String(x.name)===String(n.author));
+    const avS=m?`background:${m.bg||'#eee'};color:${m.color||'#444'}`:'background:#EFEDE8;color:#444240';
+    const ini=String(n.author||'?').slice(0,2).toUpperCase();
+    const t=G.tasks.find(x=>String(x.id)===String(n.task_id));
+    const proj=t?(G.projects.find(p=>p.id===t.project_id)?.name||''):'';
+    const preview=(n.body_preview||'').slice(0,80);
+    return `<div class="notif-item${n.is_read?'':' unread'}" data-nid="${n.id}" data-tid="${n.task_id}" data-cid="${n.comment_id}" onclick="openNotif(this)">
       <div class="notif-av" style="${avS}">${ini}</div>
       <div class="notif-body">
-        <div class="notif-text"><strong>${esc(n.author)}</strong> mencionou você em uma tarefa${proj ? ' · '+esc(proj) : ''}</div>
-        ${preview ? `<div class="notif-preview">"${esc(preview)}"</div>` : ''}
+        <div class="notif-text"><strong>${esc(n.author)}</strong> mencionou você em uma tarefa${proj?' · '+esc(proj):''}</div>
+        ${preview?`<div class="notif-preview">"${esc(preview)}"</div>`:''}
         <div class="notif-time">${fmtCmtTime(n.created_at)}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-async function openNotif(el) {
-  const nid = el.dataset.nid;
-  const tid = el.dataset.tid;
-  const cid = el.dataset.cid;
-  // marca como lida
-  if (el.classList.contains('unread')) {
+async function openNotif(el){
+  const nid=el.dataset.nid;
+  const tid=el.dataset.tid;
+  const cid=el.dataset.cid;
+  if(el.classList.contains('unread')){
     el.classList.remove('unread');
-    try { await SB.from('notifications').update({ is_read: true }).eq('id', nid); } catch(e) {}
-    // atualiza badge
-    const unreadNow = document.querySelectorAll('.notif-item.unread').length;
-    const badge = document.getElementById('notif-badge');
-    if (unreadNow === 0) badge.classList.remove('show');
-    else badge.textContent = unreadNow;
+    try{await SB.from('notifications').update({is_read:true}).eq('id',nid);}catch(e){}
+    const unreadNow=document.querySelectorAll('.notif-item.unread').length;
+    const badge=document.getElementById('notif-badge');
+    if(unreadNow===0)badge.classList.remove('show');
+    else badge.textContent=unreadNow;
   }
   closeNotifPanel();
-  // garante que estamos na aba rev do projeto certo
-  const t = G.tasks.find(x => String(x.id) === String(tid));
-  if (t && t.project_id !== G.proj) {
-    await selectProj(t.project_id);
-  } else if (G.tab !== 'rev') {
-    switchTab('rev');
-  }
-  // abre painel de comentários e rola até o comentário
+  const t=G.tasks.find(x=>String(x.id)===String(tid));
+  if(t&&t.project_id!==G.proj){await selectProj(t.project_id);}
+  else if(G.tab!=='rev'){switchTab('rev');}
   await openCmtPanel(tid);
-  setTimeout(() => scrollToCmt(cid), 350);
+  setTimeout(()=>scrollToCmt(cid),350);
 }
 
-function scrollToCmt(cid) {
-  const el = document.getElementById('ci-' + cid);
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  el.style.outline = '2px solid var(--b)';
-  el.style.outlineOffset = '2px';
-  setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 1500);
+function scrollToCmt(cid){
+  const el=document.getElementById('ci-'+cid);
+  if(!el)return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.style.outline='2px solid var(--b)';el.style.outlineOffset='2px';
+  setTimeout(()=>{el.style.outline='';el.style.outlineOffset='';},1500);
 }
 
-async function markAllRead() {
-  const me = resolveMyName();
-  if (!me) return;
-  try {
-    await SB.from('notifications').update({ is_read: true }).eq('recipient', me).eq('is_read', false);
-  } catch(e) {}
-  document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+async function markAllRead(){
+  const me=resolveMyName();
+  if(!me)return;
+  try{await SB.from('notifications').update({is_read:true}).eq('recipient',me).eq('is_read',false);}catch(e){}
+  document.querySelectorAll('.notif-item.unread').forEach(el=>el.classList.remove('unread'));
   document.getElementById('notif-badge')?.classList.remove('show');
 }
 
-function toggleNotifPanel() {
-  _notifOpen = !_notifOpen;
-  const panel = document.getElementById('notif-panel');
-  if (_notifOpen) {
+function toggleNotifPanel(){
+  _notifOpen=!_notifOpen;
+  const panel=document.getElementById('notif-panel');
+  if(_notifOpen){
     panel.classList.add('open');
     loadNotifications();
-    setTimeout(() => document.addEventListener('click', notifOutside, { capture: true, once: true }), 80);
-  } else {
+    setTimeout(()=>document.addEventListener('click',notifOutside,{capture:true,once:true}),80);
+  }else{
     panel.classList.remove('open');
   }
 }
-function closeNotifPanel() {
-  _notifOpen = false;
+function closeNotifPanel(){
+  _notifOpen=false;
   document.getElementById('notif-panel')?.classList.remove('open');
 }
-function notifOutside(e) {
-  const panel = document.getElementById('notif-panel');
-  const btn   = document.getElementById('notif-btn');
-  if (panel && !panel.contains(e.target) && !btn.contains(e.target)) {
-    closeNotifPanel();
-  }
+function notifOutside(e){
+  const panel=document.getElementById('notif-panel');
+  const btn=document.getElementById('notif-btn');
+  if(panel&&!panel.contains(e.target)&&!btn.contains(e.target)){closeNotifPanel();}
 }
 
-/* Cria notificação para cada membro mencionado ao salvar comentário */
-async function createMentionNotifications(commentId, taskId, author, body, mentions) {
-  if (!Array.isArray(mentions) || !mentions.length) return;
-  const preview = body.slice(0, 80);
-  const rows = mentions
-    .filter(name => name !== author) // não notifica a si mesmo
-    .map(name => ({ recipient: name, comment_id: commentId, task_id: taskId, author, body_preview: preview }));
-  if (!rows.length) return;
-  try { await SB.from('notifications').insert(rows); } catch(e) { console.warn('[notif insert]', e.message); }
+async function createMentionNotifications(commentId,taskId,author,body,mentions){
+  if(!Array.isArray(mentions)||!mentions.length)return;
+  const preview=body.slice(0,80);
+  const rows=mentions
+    .filter(name=>name!==author)
+    .map(name=>({recipient:name,comment_id:commentId,task_id:taskId,author,body_preview:preview}));
+  if(!rows.length)return;
+  try{await SB.from('notifications').insert(rows);}catch(e){console.warn('[notif insert]',e.message);}
 }
-
 </script>
 </body>
 </html>
