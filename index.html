@@ -952,10 +952,10 @@ async function bootApp(){
         dbQ('tasks',{project_id:G.proj}),
         dbQVersions(G.proj),
       ]);
-      if(G.versions.length&&(!G.ver||!G.versions.find(v=>v.id===G.ver))){
-        const savedVer=getVerForProj(G.proj);
-        G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
-      }
+      /* Sempre abre na versão mais recente (index 0).
+         O localStorage só é respeitado se o usuário escolheu
+         explicitamente uma versão diferente da mais recente. */
+      G.ver=G.versions[0].id;
     }
   }catch(e){
     console.error('Boot error:',e);
@@ -1057,8 +1057,7 @@ async function selectProj(id){
     dbQVersions(id),
   ]);
   if(G.versions.length){
-    const savedVer=getVerForProj(id);
-    G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
+    G.ver=G.versions[0].id; /* sempre a mais recente */
   }
   const curVer=G.versions.find(v=>v.id===G.ver);
   if(curVer&&curVer.pdf_url){await loadPDFFromUrl(curVer.pdf_url);}
@@ -1073,9 +1072,8 @@ async function refreshAll(){
     G.tasks=await dbQ('tasks',{project_id:G.proj});
     /* ── usa dbQVersions para garantir ordem decrescente ── */
     G.versions=await dbQVersions(G.proj);
-    if(G.versions.length&&!G.ver){
-      const savedVer=getVerForProj(G.proj);
-      G.ver=(savedVer&&G.versions.find(v=>v.id===savedVer))?savedVer:G.versions[0].id;
+    if(G.versions.length){
+      G.ver=G.versions[0].id; /* sempre a mais recente */
     }
   }
   renderSB();renderTaskList();
