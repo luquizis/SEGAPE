@@ -11,29 +11,76 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --fh:'Raleway',sans-serif;--fb:'Source Sans 3',sans-serif;--fm:'DM Mono',monospace;
-  --g:#1D9E75;--b:#1351B4;--y:#FFCD07;--r:#E52207;
-  --bg:#F0EFEB;--surf:#FFF;--surf2:#F8F7F4;
-  --brd:#DDDBD5;--brd2:#C4C1BA;
+  /* ── Tipografia ── */
+  --fh:'Raleway',sans-serif;
+  --fb:'Source Sans 3',sans-serif;
+  --fm:'DM Mono',monospace;
+
+  /* ── Paleta institucional MEC / Gov.br ── */
+  --mec-green:  #1D9E75;
+  --mec-blue:   #1351B4;
+  --mec-yellow: #FFCD07;
+  --mec-red:    #E52207;
+  --mec-dark:   #071D41;
+  --mec-dark2:  #0C326F;
+
+  /* ── Aliases curtos usados no restante do CSS/JS ── */
+  --g:var(--mec-green);--b:var(--mec-blue);
+  --y:var(--mec-yellow);--r:var(--mec-red);
+
+  /* ── Superfícies ── */
+  --bg:#F5F6F8;--surf:#FFF;--surf2:#F8F9FB;
+  --brd:#E2E4E9;--brd2:#C8CDD6;
+
+  /* ── Texto ── */
   --ink:#1C1916;--ink2:#5C5850;--ink3:#9B9690;
+
+  /* ── Cores de área ── */
   --cd:#4B3F9E;--bgd:#EEEDFB;--cf:#0D6B4F;--bgf:#E0F5EE;
   --cb:#7A4500;--bgb:#FDF0DC;--ca:#8A2A1A;--bga:#FAECE7;
   --ct:#14548A;--bgt:#E4F1FA;--cs:#444240;--bgs:#EFEDE8;
   --cv:#8A2252;--bgv:#FAE8F2;
-  --done:#1D9E75;--blk:#E52207;
-  --sbw:240px;--tbh:54px;
+
+  /* ── Status ── */
+  --done:var(--mec-green);--blk:var(--mec-red);
+
+  /* ── Layout ── */
+  --sbw:244px;--tbh:54px;--govbar:26px;
   --r4:4px;--r8:8px;--r12:12px;--r16:16px;
   --sh:0 2px 8px rgba(0,0,0,.08);--shl:0 8px 30px rgba(0,0,0,.16);
 }
+
+/* ════════════════════════════════
+   FAIXA GOV.BR
+════════════════════════════════ */
+#govbar{
+  height:var(--govbar);background:var(--mec-dark);
+  display:flex;align-items:center;padding:0 14px;gap:8px;
+  position:fixed;top:0;left:0;right:0;z-index:950;flex-shrink:0;
+}
+.gov-flag{display:flex;gap:1px;align-items:center}
+.gov-flag-g{display:block;width:10px;height:7px;background:#55A630;border-radius:1px 0 0 1px}
+.gov-flag-y{display:block;width:10px;height:7px;background:#FFCD07}
+.gov-flag-b{display:block;width:10px;height:7px;background:#1351B4;border-radius:0 1px 1px 0}
+.gov-brand{font-family:var(--fh);font-size:10px;font-weight:700;color:#fff;letter-spacing:.06em}
+.gov-sep{width:1px;height:12px;background:rgba(255,255,255,.2);margin:0 4px}
+.gov-mec{font-size:9px;color:rgba(255,255,255,.55);font-family:var(--fb);letter-spacing:.05em}
+.gov-right{margin-left:auto;font-size:8px;color:rgba(255,255,255,.3);font-family:var(--fm)}
+
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;touch-action:manipulation;}
+body{
+  font-family:var(--fb);background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  touch-action:manipulation;
+  padding-top:var(--govbar);
+}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px}
 ::-webkit-scrollbar-track{background:transparent}
 
 /* LOGIN */
-#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0D1B2A 0%,#1A3A5C 50%,#0D2E1E 100%);display:flex;align-items:center;justify-content:center;z-index:900;}
-.login-card{background:var(--surf);border-radius:var(--r16);padding:40px 44px;width:400px;max-width:94%;box-shadow:var(--shl);animation:fadeUp .3s ease;}
+#login-screen{position:fixed;inset:0;background:linear-gradient(145deg,#071D41 0%,#1351B4 60%,#0D6B4F 100%);display:flex;align-items:center;justify-content:center;z-index:900;}
+.login-card{background:var(--surf);border-radius:var(--r16);padding:40px 44px;width:400px;max-width:94%;box-shadow:var(--shl);animation:fadeUp .3s ease;border-top:4px solid var(--mec-green);}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .login-mark{width:44px;height:44px;background:var(--g);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:20px;font-weight:700;color:#fff}
@@ -66,41 +113,42 @@ body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(252,211,77,.5)}50%{box-shadow:0 0 0 4px rgba(252,211,77,0)}}
 
 /* SHELL */
-#shell{display:flex;height:100vh;height:calc(var(--real-vh,1vh)*100);overflow:hidden}
-#sb{width:var(--sbw);min-width:var(--sbw);background:#0D1B2A;display:flex;flex-direction:column;z-index:30;overflow:hidden}
-.sb-top{padding:16px 16px 14px;border-bottom:2px solid var(--g);flex-shrink:0}
-.sb-top-row{display:flex;align-items:center;gap:10px;margin-bottom:3px}
-.sb-mark{width:28px;height:28px;background:var(--g);border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
-.sb-nm{font-family:var(--fh);font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
-.sb-sub{font-size:9px;color:rgba(255,255,255,.35);font-family:var(--fm);letter-spacing:.05em}
+#shell{display:flex;height:calc(100vh - var(--govbar));height:calc(var(--real-vh,1vh)*100 - var(--govbar));overflow:hidden}
+#sb{width:var(--sbw);min-width:var(--sbw);background:#fff;border-right:1px solid var(--brd);display:flex;flex-direction:column;z-index:30;overflow:hidden}
+.sb-top{padding:16px 16px 14px;border-bottom:3px solid var(--mec-green);flex-shrink:0;background:#fff}
+.sb-top-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.sb-mark{width:36px;height:36px;background:var(--mec-green);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:8px;font-weight:700;color:#fff;letter-spacing:.05em;flex-shrink:0}
+.sb-nm{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.2px;line-height:1.25}
+.sb-nm span{display:block;font-size:10px;font-weight:400;color:var(--ink3);letter-spacing:.01em;margin-top:1px;font-family:var(--fb)}
+.sb-sub{font-size:8px;color:var(--ink3);font-family:var(--fm);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
 .sb-sc{flex:1;overflow-y:auto;padding:6px 8px 10px}
 .sb-sc::-webkit-scrollbar{width:3px}
-.sb-sc::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15)}
-.sb-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:10px 8px 4px;display:flex;align-items:center;justify-content:space-between}
-.sb-lbl button{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:15px;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .1s;line-height:1}
-.sb-lbl button:hover{background:rgba(255,255,255,.1);color:#fff}
-.si{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--r4);cursor:pointer;transition:background .1s;margin-bottom:1px;border-left:2px solid transparent}
-.si:hover{background:rgba(255,255,255,.08)}
-.si.on{background:rgba(255,255,255,.12);border-left-color:var(--g)}
+.sb-sc::-webkit-scrollbar-thumb{background:var(--brd2)}
+.sb-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:10px 8px 4px;display:flex;align-items:center;justify-content:space-between}
+.sb-lbl button{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:15px;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .1s;line-height:1}
+.sb-lbl button:hover{background:var(--bg);color:var(--ink)}
+.si{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--r8);cursor:pointer;transition:background .1s;margin-bottom:1px;border-left:2px solid transparent}
+.si:hover{background:var(--bg)}
+.si.on{background:#EEF8F4;border-left-color:var(--mec-green)}
 .si .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.si .sn{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.85)}
-.si.on .sn{color:#fff}
-.si .sr{font-size:9px;color:rgba(255,255,255,.35);white-space:nowrap}
-.si .bx{font-size:9px;font-family:var(--fm);background:#B91C1C;color:#FEF2F2;padding:1px 5px;border-radius:10px;font-weight:600}
-.sdv{height:1px;background:rgba(255,255,255,.08);margin:5px 8px}
+.si .sn{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.si.on .sn{color:var(--ink);font-weight:600}
+.si .sr{font-size:9px;color:var(--ink3);white-space:nowrap}
+.si .bx{font-size:9px;font-family:var(--fm);background:#FEE2E2;color:#991B1B;padding:1px 5px;border-radius:10px;font-weight:600}
+.sdv{height:1px;background:var(--brd);margin:5px 8px}
 .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-family:var(--fh)}
-.sb-ft{border-top:1px solid rgba(255,255,255,.08);padding:10px 12px;flex-shrink:0}
-.me-pill{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,.06);border-radius:var(--r8);cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:background .1s}
-.me-pill:hover{background:rgba(255,255,255,.12)}
+.sb-ft{border-top:1px solid var(--brd);padding:10px 12px;flex-shrink:0}
+.me-pill{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:var(--r8);cursor:pointer;border:1px solid var(--brd);transition:background .1s}
+.me-pill:hover{background:var(--brd)}
 .me-info{flex:1;min-width:0}
-.me-nm{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.me-rl{font-size:10px;color:rgba(255,255,255,.4)}
-.me-logout{font-size:10px;color:rgba(255,255,255,.35);cursor:pointer;padding:2px 6px;border-radius:3px;border:none;background:none;font-family:var(--fm)}
-.me-logout:hover{color:#fff;background:rgba(255,255,255,.1)}
+.me-nm{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me-rl{font-size:10px;color:var(--ink3)}
+.me-logout{font-size:10px;color:var(--ink3);cursor:pointer;padding:2px 6px;border-radius:3px;border:none;background:none;font-family:var(--fm)}
+.me-logout:hover{color:var(--ink);background:var(--brd)}
 
 /* MAIN */
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-#tb{height:var(--tbh);background:var(--surf);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0;z-index:20;position:relative}
+#tb{height:var(--tbh);background:#fff;border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0;z-index:20;position:relative;box-shadow:0 1px 0 var(--brd)}
 .tb-stripe{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--g) 0%,var(--b) 50%,var(--y) 75%,var(--r) 100%)}
 .tb-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:2px}
 .tb-ti{font-family:var(--fh);font-size:14px;font-weight:700;letter-spacing:-.2px;flex:1;min-width:0}
@@ -330,6 +378,9 @@ textarea.fc{resize:vertical;min-height:62px;line-height:1.5}
   display:none;transition:opacity .22s;opacity:0}
 #cmt-overlay.open{display:block;opacity:1}
 @media(max-width:768px){
+  #govbar{display:none}
+  body{padding-top:0}
+  #shell{height:calc(var(--real-vh,1vh)*100)}
   #cmt-panel{width:100%;border-left:none;top:auto;bottom:0;height:88vh;
     transform:translateY(100%)}
   #cmt-panel.open{transform:translateY(0)}
@@ -477,7 +528,7 @@ tr:hover td{background:var(--surf2)}
 @media(max-width:768px){
   :root{--tbh:50px;--sbw:280px;}
   html,body{height:100%;overflow:hidden}
-  #sb{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:30;padding-bottom:60px;}
+  #sb{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:30;padding-bottom:60px;box-shadow:4px 0 20px rgba(0,0,0,.12);}
   #sb.open{transform:translateX(0);}
   #sb-overlay{display:block;opacity:0;pointer-events:none;transition:opacity .28s;}
   #sb-overlay.open{opacity:1;pointer-events:auto;}
@@ -578,8 +629,8 @@ tr:hover td{background:var(--surf2)}
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-mark">S</div>
-      <div class="login-names"><h1>SEGAPE Tracker</h1><p>MEC · Publicações Estratégicas</p></div>
+      <div class="login-mark" style="font-size:11px;letter-spacing:.03em">MEC</div>
+      <div class="login-names"><h1>SEGAPE Tracker</h1><p>Ministério da Educação · Publicações Estratégicas</p></div>
     </div>
     <div class="login-screen-inner active" id="ls-login">
       <div class="login-title">Entrar no sistema</div>
@@ -615,6 +666,19 @@ tr:hover td{background:var(--surf2)}
       <button class="login-btn" id="reg-btn" onclick="doRegister()">Criar minha conta</button>
     </div>
   </div>
+</div>
+
+<!-- FAIXA GOV.BR -->
+<div id="govbar">
+  <div class="gov-flag">
+    <span class="gov-flag-g"></span>
+    <span class="gov-flag-y"></span>
+    <span class="gov-flag-b"></span>
+  </div>
+  <span class="gov-brand">gov.br</span>
+  <span class="gov-sep"></span>
+  <span class="gov-mec">Ministério da Educação</span>
+  <span class="gov-right">SEGAPE · Publicações Estratégicas</span>
 </div>
 
 <!-- SHELL -->
@@ -1935,9 +1999,10 @@ async function renderIndView(){
     </div>
     <div class="ind-wrap">
       <div class="ind-hd">📊 Auditoria de Indicadores — Data Lake / SQL <span class="hcnt">${G.indicators.length}</span></div>
-      ${G.indicators.length?`<table><thead><tr><th>Pág</th><th>Indicador</th><th>Query / Caminho</th><th>Lake</th><th>Status</th><th></th></tr></thead>
+      ${G.indicators.length?`<table><thead><tr><th>Pág</th><th>Código</th><th>Indicador</th><th>Query / Caminho</th><th>Lake</th><th>Status</th><th></th></tr></thead>
         <tbody>${G.indicators.map(i=>`<tr>
           <td><code style="font-family:var(--fm);font-size:10px">${i.page||'—'}</code></td>
+          <td><code style="font-family:var(--fm);font-size:10px;color:var(--mec-blue);background:#EEF3FC;padding:2px 6px;border-radius:4px">${i.indicator_code||'—'}</code></td>
           <td><strong>${i.indicator_name}</strong>${i.observation?`<br><span style="font-size:10px;color:var(--ink3)">${i.observation}</span>`:''}</td>
           <td><code style="font-size:10px;font-family:var(--fm);word-break:break-all;color:var(--ink2)">${i.query_sql||'—'}</code></td>
           <td style="font-size:10px;color:var(--ink3)">${i.spreadsheet_lake||'—'}</td>
@@ -1950,8 +2015,9 @@ async function renderIndView(){
     </div>
     <div class="ind-form">
       <h4>+ Vincular novo indicador ao Data Lake</h4>
-      <div class="ind-grid">
+      <div style="display:grid;grid-template-columns:60px 140px 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
         <div><label class="fl">Pág</label><input class="fc" type="number" id="ip-pg" placeholder="12"></div>
+        <div><label class="fl">Código do Indicador</label><input class="fc" type="text" id="ip-code" placeholder="Ex: IND-042"></div>
         <div><label class="fl">Nome do Indicador</label><input class="fc" type="text" id="ip-name" placeholder="Ex: Taxa distorção idade-série"></div>
         <div><label class="fl">Query SQL / Caminho</label><input class="fc" type="text" id="ip-query" placeholder="SELECT ... FROM censo.escolas ..."></div>
         <div><label class="fl">Planilha / Lake</label><input class="fc" type="text" id="ip-lake" placeholder="/data/censo_2024/escolas.xlsx"></div>
@@ -2053,6 +2119,7 @@ async function markLakeAsReview(ids){
     if(tbody){
       tbody.innerHTML=G.indicators.map(i=>`<tr>
         <td><code style="font-family:var(--fm);font-size:10px">${i.page||'—'}</code></td>
+        <td><code style="font-family:var(--fm);font-size:10px;color:var(--mec-blue);background:#EEF3FC;padding:2px 6px;border-radius:4px">${i.indicator_code||'—'}</code></td>
         <td><strong>${i.indicator_name}</strong>${i.observation?`<br><span style="font-size:10px;color:var(--ink3)">${i.observation}</span>`:''}</td>
         <td><code style="font-size:10px;font-family:var(--fm);word-break:break-all;color:var(--ink2)">${i.query_sql||'—'}</code></td>
         <td style="font-size:10px;color:var(--ink3)">${i.spreadsheet_lake||'—'}</td>
@@ -2089,6 +2156,7 @@ async function doAddInd(){
     await dbIns('project_indicators',{
       project_id:G.proj,
       page:parseInt(document.getElementById('ip-pg').value)||null,
+      indicator_code:document.getElementById('ip-code').value.trim()||null,
       indicator_name:name,
       query_sql:document.getElementById('ip-query').value.trim(),
       spreadsheet_lake:document.getElementById('ip-lake').value.trim(),
